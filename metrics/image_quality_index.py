@@ -73,6 +73,17 @@ def universal_image_quality_index(x, y, kernelsize=8):
     x = x.astype(np.float)
     y = y.astype(np.float)
 
+    # sums and auxiliary expressions based on sums
     S_x = convolve2d(x, kernel, mode='valid')
+    S_y = convolve2d(y, kernel, mode='valid')
+    PS_xy = S_x * S_y
+    SSS_xy = S_x*S_x + S_y*S_y
 
-    # to be continued...
+    # sums of squares and product
+    S_xx = convolve2d(x*x, kernel, mode='valid')
+    S_yy = convolve2d(y*y, kernel, mode='valid')
+    S_xy = convolve2d(x*y, kernel, mode='valid')
+
+    Q_s = 4 * PS_xy * (N * S_xy - PS_xy) / (N*(S_xx + S_yy) - SSS_xy) / SSS_xy
+
+    return np.mean(Q_s)
