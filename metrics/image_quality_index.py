@@ -64,6 +64,26 @@ import numpy as np
 from scipy.signal import convolve2d
 
 
+def partial_sums(x, kernel_size=8):
+    """Calculate partial sums of array in boxes (kernel_size x kernel_size).
+
+    This corresponds to:
+    scipy.signal.convolve2d(x, np.ones((kernel_size, kernel_size)), mode='valid')
+    >>> partial_sums(np.arange(12).reshape(3, 4), 2)
+    array([[10, 14, 18],
+           [26, 30, 34]])
+    """
+    assert len(x.shape) >= 2 and x.shape[0] >= kernel_size and x.shape[1] >= kernel_size
+    sums = x.cumsum(axis=0).cumsum(axis=1)
+    sums = np.pad(sums, 1)[:-1, :-1]
+    return (
+        sums[kernel_size:, kernel_size:]
+        + sums[:-kernel_size, :-kernel_size]
+        - sums[:-kernel_size, kernel_size:]
+        - sums[kernel_size:, :-kernel_size]
+    )
+
+
 def universal_image_quality_index(x, y, kernelsize=8):
     """Compute the Universal Image Quality Index (UIQI) of x and y."""
 
@@ -86,4 +106,5 @@ def universal_image_quality_index(x, y, kernelsize=8):
 
     Q_s = 4 * PS_xy * (N * S_xy - PS_xy) / (N*(S_xx + S_yy) - SSS_xy) / SSS_xy
 
-    return np.mean(Q_s)
+    # return np.mean(Q_s)
+    return locals()
