@@ -84,8 +84,38 @@ def partial_sums(x, kernel_size=8):
     )
 
 
-def universal_image_quality_index(x, y, kernelsize=8):
+def universal_image_quality_index(x, y, kernel_size=8):
     """Compute the Universal Image Quality Index (UIQI) of x and y."""
+
+    N = kernel_size ** 2
+
+    x = x.astype(np.float)
+    y = y.astype(np.float)
+    e = np.finfo(np.float).eps
+
+    # sums and auxiliary expressions based on sums
+    S_x = partial_sums(x, kernel_size)
+    S_y = partial_sums(y, kernel_size)
+    PS_xy = S_x * S_y
+    SSS_xy = S_x*S_x + S_y*S_y
+
+    # sums of squares and product
+    S_xx = partial_sums(x*x, kernel_size)
+    S_yy = partial_sums(y*y, kernel_size)
+    S_xy = partial_sums(x*y, kernel_size)
+
+    num = 4 * PS_xy * (N * S_xy - PS_xy)
+    den = (N*(S_xx + S_yy) - SSS_xy) / (SSS_xy + e)
+
+    Q_s = (num) / (den + e)
+
+    return np.mean(Q_s)
+
+
+def universal_image_quality_index_conv(x, y, kernelsize=8):
+    """Compute the Universal Image Quality Index (UIQI) of x and y.
+
+    Not normalized with epsilon, and using scipy.signal.convolve2d."""
 
     N = kernelsize ** 2
     kernel = np.ones((kernelsize, kernelsize))
@@ -106,5 +136,4 @@ def universal_image_quality_index(x, y, kernelsize=8):
 
     Q_s = 4 * PS_xy * (N * S_xy - PS_xy) / (N*(S_xx + S_yy) - SSS_xy) / SSS_xy
 
-    # return np.mean(Q_s)
-    return locals()
+    return np.mean(Q_s)
