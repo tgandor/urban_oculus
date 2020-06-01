@@ -25,7 +25,7 @@ def filesizes(glob_expr):
 
 def run_validation(model_config="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"):
   cfg = get_cfg()
-  cfg.merge_from_file(detectron2.model_zoo.get_config_file(model_config)))
+  cfg.merge_from_file(detectron2.model_zoo.get_config_file(model_config))
   cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
   cfg.MODEL.WEIGHTS = detectron2.model_zoo.get_checkpoint_url(model_config)
   predictor = DefaultPredictor(cfg)
