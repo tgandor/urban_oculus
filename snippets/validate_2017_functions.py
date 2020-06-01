@@ -63,3 +63,12 @@ def save_results(result_file, quality, results, inference_time, output_dir=None)
     }))
   save(result_file, output_dir)
 
+
+def result_name(model_config, quality):
+    """Produce the result JSON name.
+
+    >>> result_name("COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml", 10)
+    'val2017_mask_rcnn_R_101_FPN_3x_q_10.json'
+    """
+    model = os.path.splitext(os.path.basename(model_config))[0]
+    return  f'val2017_{model}_q_{quality}.json'
