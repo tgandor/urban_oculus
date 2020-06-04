@@ -54,16 +54,6 @@ def save_filesizes(name, quality, elapsed, output_dir=None):
   save(name, output_dir)
 
 
-def save_results(result_file, quality, results, inference_time, output_dir=None):
-  with open(result_file, 'w') as f:
-    f.write(json.dumps({
-        'quality': quality,
-        'bbox': results['bbox'],
-        'elapsed': inference_time,
-    }))
-  save(result_file, output_dir)
-
-
 def result_name(model_config, quality):
     """Produce the result JSON name.
 
@@ -72,3 +62,51 @@ def result_name(model_config, quality):
     """
     model = os.path.splitext(os.path.basename(model_config))[0]
     return  f'val2017_{model}_q_{quality}.json'
+
+
+def save_results(model_config, quality, results, inference_time, output_dir=None):
+  result_file = result_name(model_config, quality)
+  with open(result_file, 'w') as f:
+    f.write(json.dumps({
+        'quality': quality,
+        'bbox': results['bbox'],
+        'elapsed': inference_time,
+        'model_config': model_config,
+        'finished': time.strftime('%Y-%m-%d %H:%M:%S'),
+    }))
+  save(result_file, output_dir)
+
+
+def result_path(model_config, quality, output_dir):
+  result_file = result_name(model_config, quality)
+  return os.path.join(output_dir, result_file)
+
+
+'''
+COCO Object Detection Baselines
+
+Faster R-CNN:
+Name 	    lr_sched 	train_time_(s/iter) inference_time_(s/im) 	train_mem_(GB) 	box_AP 	model_id
+R50-C4 	  3x 	      0.543 	            0.104 	                4.8 	          38.4 	  137849393
+R50-DC5 	3x 	      0.378 	            0.070 	                5.0 	          39.0 	  137849425
+R50-FPN 	3x 	      0.209 	            0.038 	                3.0 	          40.2 	  137849458
+R101-C4 	3x 	      0.619 	            0.139 	                5.9 	          41.1 	  138204752
+R101-DC5 	3x 	      0.452 	            0.086 	                6.1 	          40.6 	  138204841
+R101-FPN 	3x 	      0.286 	            0.051 	                4.1 	          42.0 	  137851257
+X101-FPN 	3x 	      0.638 	            0.098 	                6.7 	          43.0 	  139173657
+
+TODO: add RetinaNet, consided RPN & Fast R-CNN
+'''
+
+# for object detection, BTW.
+
+MODEL_ZOO_CONFIGS = [
+  "COCO-Detection/faster_rcnn_R_50_C4_3x.yaml",
+  "COCO-Detection/faster_rcnn_R_50_DC5_3x.yaml",
+  "COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",
+  "COCO-Detection/faster_rcnn_R_101_C4_3x.yaml",
+  "COCO-Detection/faster_rcnn_R_101_DC5_3x.yaml",
+  "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
+  "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
+  "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
+]
