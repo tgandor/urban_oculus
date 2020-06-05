@@ -86,14 +86,14 @@ def result_path(model_config, quality, output_dir):
 COCO Object Detection Baselines
 
 Faster R-CNN:
-Name 	    lr_sched 	train_time_(s/iter) inference_time_(s/im) 	train_mem_(GB) 	box_AP 	model_id
-R50-C4 	  3x 	      0.543 	            0.104 	                4.8 	          38.4 	  137849393
-R50-DC5 	3x 	      0.378 	            0.070 	                5.0 	          39.0 	  137849425
-R50-FPN 	3x 	      0.209 	            0.038 	                3.0 	          40.2 	  137849458
-R101-C4 	3x 	      0.619 	            0.139 	                5.9 	          41.1 	  138204752
-R101-DC5 	3x 	      0.452 	            0.086 	                6.1 	          40.6 	  138204841
-R101-FPN 	3x 	      0.286 	            0.051 	                4.1 	          42.0 	  137851257
-X101-FPN 	3x 	      0.638 	            0.098 	                6.7 	          43.0 	  139173657
+Name     lr_sched train_time_(s/iter) inference_time_(s/im) train_mem_(GB) box_AP model_id   model_idx
+R50-C4    3x        0.543                 0.104                   4.8       38.4   137849393  0
+R50-DC5   3x        0.378                 0.070                   5.0       39.0   137849425  1
+R50-FPN   3x        0.209                 0.038                   3.0       40.2   137849458  2
+R101-C4   3x        0.619                 0.139                   5.9       41.1   138204752  3
+R101-DC5  3x        0.452                 0.086                   6.1       40.6   138204841  4
+R101-FPN  3x        0.286                 0.051                   4.1       42.0   137851257  5
+X101-FPN  3x        0.638                 0.098                   6.7       43.0   139173657  6
 
 TODO: add RetinaNet, consided RPN & Fast R-CNN
 '''
