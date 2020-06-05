@@ -3,6 +3,8 @@ import shutil
 import json
 import time
 
+import torch
+
 import detectron2.model_zoo
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
@@ -38,10 +40,18 @@ def run_validation(model_config="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3
 
 
 def save(path, output_dir=None):
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
-        shutil.copy(path, output_dir)
-        print(f'Saving {path} to {output_dir}')
+    if not output_dir:
+        return
+
+    basename = os.path.basename(path)
+    target = os.path.join(output_dir,  basename)
+    if os.path.abspath(path) == os.path.abspath(target):
+      print('Not copying:', path)
+      return
+
+    os.makedirs(output_dir, exist_ok=True)
+    shutil.copy(path, output_dir)
+    print(f'Saving {path} to {output_dir}')
 
 
 def save_filesizes(name, quality, elapsed, output_dir=None):
@@ -73,6 +83,7 @@ def save_results(model_config, quality, results, inference_time, output_dir=None
         'elapsed': inference_time,
         'model_config': model_config,
         'finished': time.strftime('%Y-%m-%d %H:%M:%S'),
+        'device': torch.cuda.get_device_name(),
     }))
   save(result_file, output_dir)
 
