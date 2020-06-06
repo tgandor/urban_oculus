@@ -125,3 +125,22 @@ MODEL_ZOO_CONFIGS = [
   "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
   "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
 ]
+
+
+def load_all_models():
+  """To fill local cache.
+
+  ipython -i snippets/validate_2017_functions.py
+  In [1]: load_all_models()
+  """
+  n = len(MODEL_ZOO_CONFIGS)
+  for i, model_config in enumerate(MODEL_ZOO_CONFIGS):
+    print(time.strftime('%Y-%m-%d %H:%M:%S'), f'Loading {model_config} ({i+1}/{n})')
+    cfg = get_cfg()
+    cfg.merge_from_file(detectron2.model_zoo.get_config_file(model_config))
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+    cfg.MODEL.WEIGHTS = detectron2.model_zoo.get_checkpoint_url(model_config)
+    predictor = DefaultPredictor(cfg)
+    del predictor
+  print(time.strftime('%Y-%m-%d %H:%M:%S'), 'done.')
+
