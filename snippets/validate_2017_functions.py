@@ -68,10 +68,14 @@ def result_name(model_config, quality):
     """Produce the result JSON name.
 
     >>> result_name("COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml", 10)
-    'val2017_mask_rcnn_R_101_FPN_3x_q_10.json'
+    'val2017_mask_rcnn_R_101_FPN_3x_q_010.json'
+    >>> result_name("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", 1)
+    'val2017_mask_rcnn_R_50_FPN_3x_q_001.json'
+    >>> result_name("COCO-InstanceSegmentation/mask_rcnn_R_101_C4_3x.yaml", 100)
+    'val2017_mask_rcnn_R_101_C4_3x_q_100.json'
     """
     model = os.path.splitext(os.path.basename(model_config))[0]
-    return  f'val2017_{model}_q_{quality}.json'
+    return  f'val2017_{model}_q_{quality:03d}.json'
 
 
 def save_results(model_config, quality, results, inference_time, output_dir=None):
