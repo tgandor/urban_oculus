@@ -123,7 +123,6 @@ MODEL_ZOO_CONFIGS = [
   "COCO-Detection/faster_rcnn_R_101_DC5_3x.yaml",
   "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
   "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
-  "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
   "COCO-Detection/retinanet_R_50_FPN_3x.yaml",
   "COCO-Detection/retinanet_R_101_FPN_3x.yaml",
 ]
