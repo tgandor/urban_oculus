@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 
 from couch import db
-from jpeg import get_QTs
+from jpeg import get_QTs, identify_quality
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filenames', nargs='+')
@@ -12,8 +12,14 @@ parser.add_argument('--dataset')
 args = parser.parse_args()
 
 for filename in tqdm(args.filenames):
-    db.save({
+    data = {
         "type": "JpgImg",
         "name": os.path.basename(filename),
         "quantization": get_QTs(filename),
-    })
+        "quality": identify_quality(filename),
+    }
+
+    if args.dataset:
+        data["dataset"] = args.dataset
+
+    db.save(data)
