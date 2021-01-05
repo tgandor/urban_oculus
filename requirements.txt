@@ -1,0 +1,4 @@
+couchdb
+pandas
+torch
+torchvision
