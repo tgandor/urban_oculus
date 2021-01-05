@@ -109,3 +109,6 @@ venv.bak/
 
 # pdfs
 *.pdf
+
+# configs
+database.txt
