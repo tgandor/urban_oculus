@@ -7,6 +7,7 @@ names = {
     0xd9: 'EOI',
     0xda: 'SOS',
     0xdb: 'DQT',
+    0Xfe: 'COM',
 }
 markers = {}  # reverse names
 for d, m in names.items():

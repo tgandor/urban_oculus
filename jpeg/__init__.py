@@ -24,7 +24,7 @@ def get_QTs(filename, with_id=False):
                 l = ord(f.read(1))
                 size = 256 * h + l
                 data = f.read(size - 2)  # 2 bytes already there
-                name = markers.names[d]
+                name = markers.names.get(d, hex(d))
                 if name == 'DQT':
                     if size == 67: # single QT
                         results.append(data[offset:].hex())
