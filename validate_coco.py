@@ -41,7 +41,7 @@ def validate_quality(q, model='R50'):
     inference_time = time.time() - start
     print(results)
     torch.save(results, out_folder + '/results.pth')
-    with open(out_folder + '/results.json') as jsf:
+    with open(out_folder + '/results.json', 'w') as jsf:
         json.dump({'quality': q, 'model': model, 'results': results, 'elapsed': inference_time}, jsf)
 
 
