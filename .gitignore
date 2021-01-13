@@ -112,3 +112,6 @@ venv.bak/
 
 # configs
 database.txt
+
+# symlinks to datasets
+datasets

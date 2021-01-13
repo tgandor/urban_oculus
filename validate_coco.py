@@ -15,7 +15,17 @@ from detectron2.engine import DefaultPredictor
 # recommended for nice information
 logging.basicConfig(level=logging.INFO)
 
-model_config = "COCO-Detection/retinanet_R_50_FPN_3x.yaml"
+MODEL_ZOO_CONFIGS = {
+    "R50_C4": "COCO-Detection/faster_rcnn_R_50_C4_3x.yaml",
+    "R50_DC5": "COCO-Detection/faster_rcnn_R_50_DC5_3x.yaml",
+    "R50_FPN": "COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",
+    "R101_C4": "COCO-Detection/faster_rcnn_R_101_C4_3x.yaml",
+    "R101_DC5": "COCO-Detection/faster_rcnn_R_101_DC5_3x.yaml",
+    "R101_FPN": "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
+    "X101": "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
+    "R50": "COCO-Detection/retinanet_R_50_FPN_3x.yaml",
+    "R101": "COCO-Detection/retinanet_R_101_FPN_3x.yaml",
+}
 
 if not os.path.exists('datasets'):
     print('Copy or symlink datasets/ directory here. (please)')
@@ -26,6 +36,7 @@ if not os.path.exists('val2017.zip'):
     exit()
 
 def validate_quality(q, model='R50'):
+    model_config = MODEL_ZOO_CONFIGS[model]
     out_folder = f'evaluator_dump_{model}_{q:03d}'
     os.system('unzip -o val2017.zip -d datasets/coco/')
     os.system(f'mogrify -verbose -quality {q} datasets/coco/val2017/*')
@@ -42,9 +53,25 @@ def validate_quality(q, model='R50'):
     print(results)
     torch.save(results, out_folder + '/results.pth')
     with open(out_folder + '/results.json', 'w') as jsf:
-        json.dump({'quality': q, 'model': model, 'results': results, 'elapsed': inference_time}, jsf)
+        json.dump({
+            'quality': q,
+            'model': model,
+            'results': results,
+            'elapsed': inference_time,
+            'device': torch.cuda.get_device_name(),
+        }, jsf)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('model')
+    parser.add_argument('--device', '-d', type=int, help='select CUDA device')
+    args = parser.parse_args()
+
+    if args.device is not None:
+        print(f'Current device {torch.cuda.current_device()} ({torch.cuda.get_device_name()})')
+        torch.cuda.set_device(args.device)
+        print(f'New device {torch.cuda.current_device()} ({torch.cuda.get_device_name()})')
+
     for i in range(1, 101):
-        validate_quality(i)
+        validate_quality(i, args.model)
