@@ -2,6 +2,12 @@ import os
 
 import couchdb
 
+
+class ServerWithCompletion(couchdb.Server):
+    def _ipython_key_completions_(self):
+        return list(self)
+
+
 DB_CONFIG = os.path.join(os.path.dirname(__file__), 'database.txt')
 
 if not os.path.exists(DB_CONFIG):
@@ -11,7 +17,7 @@ if not os.path.exists(DB_CONFIG):
 else:
     server_url, db_name = open(DB_CONFIG).read().strip().split("\n")
 
-    srv = couchdb.Server(server_url)
+    srv = ServerWithCompletion(server_url)
 
     if db_name not in srv:
         print(f"{db_name} not on the server. Creating.")
