@@ -10,7 +10,7 @@ class ServerWithCompletion(couchdb.Server):
 
 def index_exists(db, ddoc, name):
     return any(
-        idx['ddoc'] == f'_design/{ddoc}' and idx['name'] == name
+        idx['ddoc'] == '_design/{}'.format(ddoc) and idx['name'] == name
         for idx in db.index()
     )
 
@@ -18,7 +18,7 @@ def index_exists(db, ddoc, name):
 DB_CONFIG = os.path.join(os.path.dirname(__file__), 'database.txt')
 
 if not os.path.exists(DB_CONFIG):
-    print(f'Missing {DB_CONFIG}, please provide file, e.g.:')
+    print('Missing {}, please provide file, e.g.:'.format(DB_CONFIG))
     print(open(DB_CONFIG+'.example').read())
     srv = db = None
 else:
@@ -27,7 +27,7 @@ else:
     srv = ServerWithCompletion(server_url)
 
     if db_name not in srv:
-        print(f"{db_name} not on the server. Creating.")
+        print("{} not on the server. Creating.".format(db_name))
         db = srv.create(db_name)
     else:
         db = srv[db_name]
