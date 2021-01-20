@@ -8,6 +8,13 @@ class ServerWithCompletion(couchdb.Server):
         return list(self)
 
 
+def index_exists(db, ddoc, name):
+    return any(
+        idx['ddoc'] == f'_design/{ddoc}' and idx['name'] == name
+        for idx in db.index()
+    )
+
+
 DB_CONFIG = os.path.join(os.path.dirname(__file__), 'database.txt')
 
 if not os.path.exists(DB_CONFIG):
@@ -24,3 +31,10 @@ else:
         db = srv.create(db_name)
     else:
         db = srv[db_name]
+
+    # indexes
+    idx = db.index()
+
+    if not index_exists(db, 'main', 'type'):
+        print("Creating 'type' index...")
+        idx['main', 'type'] = ['type']
