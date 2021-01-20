@@ -66,6 +66,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--device', '-d', type=int, help='select CUDA device')
+    parser.add_argument('--minQ', type=int, help='min JPEG quality', default=1)
+    parser.add_argument('--maxQ', type=int, help='min JPEG quality', default=100)
     args = parser.parse_args()
 
     if args.device is not None:
@@ -73,5 +75,5 @@ if __name__ == '__main__':
         torch.cuda.set_device(args.device)
         print(f'New device {torch.cuda.current_device()} ({torch.cuda.get_device_name()})')
 
-    for i in range(1, 101):
+    for i in range(args.minQ, args.maxQ+1):
         validate_quality(i, args.model)
