@@ -1,4 +1,6 @@
+import argparse
 import os
+from pprint import pprint
 
 import couchdb
 
@@ -38,3 +40,16 @@ else:
     if not index_exists(db, 'main', 'type'):
         print("Creating 'type' index...")
         idx['main', 'type'] = ['type']
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--push', help='remote database to push to')
+    parser.add_argument('--pull', help='remote database to pull from')
+    args = parser.parse_args()
+
+    if args.push:
+        result = srv.replicate(db_name, args.push)
+        pprint(result)
+    if args.pull:
+        result = srv.replicate(args.pull, db_name)
+        pprint(result)
