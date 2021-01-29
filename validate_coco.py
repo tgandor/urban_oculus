@@ -40,7 +40,10 @@ def validate_quality(q, model="R50"):
     model_config = MODEL_ZOO_CONFIGS[model]
     out_folder = f"evaluator_dump_{model}_{q:03d}"
     os.system("unzip -o val2017.zip -d datasets/coco/")
-    os.system(f"mogrify -verbose -quality {q} datasets/coco/val2017/*")
+    if 1 <= q <= 100:
+        os.system(f"mogrify -verbose -quality {q} datasets/coco/val2017/*")
+    else:
+        print('Skipping quality degradation.')
     cfg = get_cfg()
     cfg.merge_from_file(detectron2.model_zoo.get_config_file(model_config))
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
