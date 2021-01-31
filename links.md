@@ -40,3 +40,11 @@ https://www.impulseadventure.com/photo/jpeg-decoder.html
 * JFIF segment markers (names)
 * SOF types other than SOF0 (baseline DCT, eg. SOF2 - progressive)
 
+## Other formats
+
+[How WebP works](https://medium.com/@duhroach/how-webp-works-lossly-mode-33bd2b1d0670)
+
+* chroma subsampling
+* prediction
+* DCT + quantization of residuals (similar to JPEG)
+
