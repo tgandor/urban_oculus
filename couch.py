@@ -17,6 +17,10 @@ def index_exists(db, ddoc, name):
     )
 
 
+def all_docs(type_):
+    return db.find({'selector': {'type': type_}})
+
+
 DB_CONFIG = os.path.join(os.path.dirname(__file__), 'database.txt')
 
 if not os.path.exists(DB_CONFIG):
