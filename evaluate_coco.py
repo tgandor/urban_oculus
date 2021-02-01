@@ -28,19 +28,23 @@ elif detFile.endswith('.gz'):
 dt = gt.loadRes(detFile)
 
 coco = COCOeval(gt, dt, iouType='bbox')
+coco.params.areaRng = [[0.0, 1e9]]  # don't evalImage
 coco.evaluate()
 # coco.accumulate() - not needed for evalImgs...
 
 tp = 0
+gt = 0
 
 for img in coco.evalImgs:
     if img is None:
         continue
     # print(img)
     # break
-    tp += (img['dtMatches'][0] > 0).sum()
 
-print(f'Total objects found in {args.detection_file}: {tp:,}')
+    tp += (img['dtMatches'][0] > 0).sum()
+    gt += len(img['gtIds']) - img['gtIgnore'].astype(int).sum()
+
+print(f'Total objects found in {args.detection_file}: {tp:,} (of {gt:,})')
 
 with open('evaluate_log.txt', 'a') as log:
-    print(f'{args.detection_file}: {tp:,}', file=log)
+    print(f'{args.detection_file}: {tp:,} (of {gt:,})', file=log)
