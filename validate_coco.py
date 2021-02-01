@@ -36,7 +36,7 @@ if not os.path.exists("val2017.zip"):
     exit()
 
 
-def validate_quality(q, model="R50"):
+def validate_quality(q, model, min_score):
     model_config = MODEL_ZOO_CONFIGS[model]
     out_folder = f"evaluator_dump_{model}_{q:03d}"
     os.system("unzip -o val2017.zip -d datasets/coco/")
@@ -46,8 +46,8 @@ def validate_quality(q, model="R50"):
         print('Skipping quality degradation.')
     cfg = get_cfg()
     cfg.merge_from_file(detectron2.model_zoo.get_config_file(model_config))
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for R-CNN
-    cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for RetinaNet
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = min_score  # set threshold for R-CNN
+    cfg.MODEL.RETINANET.SCORE_THRESH_TEST = min_score  # set threshold for RetinaNet
     cfg.MODEL.WEIGHTS = detectron2.model_zoo.get_checkpoint_url(model_config)
     predictor = DefaultPredictor(cfg)
     data_loader = build_detection_test_loader(cfg, "coco_2017_val")
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", "-d", type=int, help="select CUDA device")
     parser.add_argument("--minQ", type=int, help="min JPEG quality", default=1)
     parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=100)
+    parser.add_argument("--min-score", "-t", type=float, help="score threshold for objects", default=0.5)
     args = parser.parse_args()
 
     if args.device is not None:
@@ -88,4 +89,4 @@ if __name__ == "__main__":
         )
 
     for i in range(args.minQ, args.maxQ + 1):
-        validate_quality(i, args.model)
+        validate_quality(i, args.model, args.min_score)
