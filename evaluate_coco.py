@@ -15,6 +15,7 @@ if not os.path.exists(ANNOTATIONS):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('detection_file', help='path to coco_instances_results.json[.gz|.bz2|]')
+parser.add_argument('--min-score', '-t', type=float, help='confidence threshold for detections')
 args = parser.parse_args()
 
 gt = COCO(ANNOTATIONS)
@@ -24,6 +25,15 @@ if detFile.endswith('.bz2'):
     detFile = json.load(bz2.open(detFile))
 elif detFile.endswith('.gz'):
     detFile = json.load(gzip.open(detFile))
+elif detFile.endswith('.json'):
+    detFile = json.load(open(detFile))
+else:
+    raise ValueError(f'Unrecognized file type: {detFile}')
+
+print(f'Loaded {len(detFile)} detections.')
+if args.min_score:
+    detFile = [d for d in detFile if d['score'] > args.min_score]
+    print(f'Filtered with threshold {args.min_score} to {len(detFile)} detections.')
 
 dt = gt.loadRes(detFile)
 
@@ -33,13 +43,12 @@ coco.evaluate()
 # coco.accumulate() - not needed for evalImgs...
 
 tp = 0
+fp = 0
 gt = 0
 
 for img in coco.evalImgs:
     if img is None:
         continue
-    # print(img)
-    # break
 
     tp += (img['dtMatches'][0] > 0).sum()
     gt += len(img['gtIds']) - img['gtIgnore'].astype(int).sum()
