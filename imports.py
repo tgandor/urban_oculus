@@ -1,5 +1,6 @@
 import json
 import bz2
+import gzip
 from collections import Counter
 
 from pycocotools.coco import COCO
@@ -25,13 +26,18 @@ MODEL_ZOO_CONFIGS = {
     "R101": "COCO-Detection/retinanet_R_101_FPN_3x.yaml",
 }
 
+
 def conf(model):
     model_config = MODEL_ZOO_CONFIGS[model]
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(model_config))
     return cfg
 
+
 def load(path: str):
+    if path.endswith('.json.gz'):
+        with gzip.open(path) as fs:
+            return json.load(fs)
     if path.endswith('.json.bz2'):
         with bz2.open(path) as fs:
             return json.load(fs)

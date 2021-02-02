@@ -16,6 +16,7 @@ if not os.path.exists(ANNOTATIONS):
 parser = argparse.ArgumentParser()
 parser.add_argument('detection_file', help='path to coco_instances_results.json[.gz|.bz2|]')
 parser.add_argument('--min-score', '-t', type=float, help='confidence threshold for detections')
+parser.add_argument('--full', action='store_true', help='perform full accumulate / summarize')
 args = parser.parse_args()
 
 gt = COCO(ANNOTATIONS)
@@ -38,9 +39,15 @@ if args.min_score:
 dt = gt.loadRes(detFile)
 
 coco = COCOeval(gt, dt, iouType='bbox')
-coco.params.areaRng = [[0.0, 1e9]]  # don't evalImage
+if not args.full:
+    coco.params.areaRng = [[0.0, 1e9]]  # don't evalImage for 'small', 'medium', 'large'
+
 coco.evaluate()
-# coco.accumulate() - not needed for evalImgs...
+
+if args.full:
+    coco.accumulate()
+    coco.summarize()
+    exit()
 
 tp = 0
 fp = 0
