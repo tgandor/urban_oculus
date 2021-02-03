@@ -45,10 +45,12 @@ gt = COCO(ANNOTATIONS)
 metrics = []
 
 for detFile in args.detection_files:
+    print(f'Processing {detFile}')
+
     det_filename = detFile
     if os.path.isdir(detFile):
         dump_dir = detFile
-        detFile = glob.glob(os.path.join(
+        det_filename = glob.glob(os.path.join(
             dump_dir, "coco_instances_results.json*"))[0]
     else:
         dump_dir = os.path.dirname(detFile)
@@ -58,13 +60,13 @@ for detFile in args.detection_files:
 
     results = load(results_file)
 
-    detFile = load(detFile)
+    detFile = load(det_filename)
 
-    print(f'Loaded {len(detFile)} detections.')
+    print(f'Loaded dets by {results["model"]}, count = {len(detFile):,}.')
+
     if args.min_score:
         detFile = [d for d in detFile if d['score'] > args.min_score]
-        print(
-            f'Filtered with threshold {args.min_score} to {len(detFile)} detections.')
+        print(f'Filtered with T={args.min_score} to {len(detFile)} dets.')
 
     dt = gt.loadRes(detFile)
 
@@ -76,15 +78,10 @@ for detFile in args.detection_files:
 
     coco.evaluate()
 
-    if args.full:
-        coco.accumulate()
-        coco.summarize()
-
     tp = 0
     fp = 0
     n_gt = 0
     an_gt = 0  # alternative (no ignore)
-
 
     nCats = len(coco.params.catIds)
     nArea = len(coco.params.areaRng)
@@ -113,24 +110,13 @@ for detFile in args.detection_files:
     print(f'precision {precision*100:.1f} recall {recall*100:.1f}')
     print(f'alt_recall {alt_recall*100:.1f}')
 
-    if args.full:
-        raw_recalls = coco.eval["recall"][IoU_T_IDX, :, AREARNG_IDX, MAXDET_IDX]
-        e_recall = np.mean(raw_recalls[raw_recalls > -1])
-        print(f'Recall by .eval: {e_recall}')
-
     model = results['model'].replace('_', r'\_')
     ap = results['results']['bbox']['AP']
+    ap50 = results['results']['bbox']['AP50']
+    ap75 = results['results']['bbox']['AP75']
     apl = results['results']['bbox']['APl']
     apm = results['results']['bbox']['APm']
     aps = results['results']['bbox']['APs']
-
-    metrics.append([
-        model,
-        ap,
-        apl,
-        apm,
-        aps,
-    ])
 
     print(
         results['model'],
@@ -140,12 +126,67 @@ for detFile in args.detection_files:
         }
     )
 
+    if args.full:
+        coco.accumulate()
+        coco.summarize()
+        raw_rc = coco.eval["recall"][IoU_T_IDX, :, AREARNG_IDX, MAXDET_IDX]
+        e_recall = np.mean(raw_rc[raw_rc > -1])
+        print(f'Recall by .eval: {e_recall}')
+        new_results = dict(zip(
+            results['results']['bbox'].keys(),
+            (100 * coco.stats[:6]).round(1)
+        ))
+        print('New results by coco.stats =', new_results)
+        ap, ap50, ap75, aps, apm, apl = new_results.values()
+
+    classes = sorted(
+        [(v, k) for k, v in results['results']['bbox'].items() if '-' in k],
+        reverse=True
+    )
+    print(
+        'Top 3 classes (orig results):\n ',
+        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[:3])
+    )
+    print(
+        'Bottom 3 classes (orig results):\n ',
+        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[-3:])
+    )
+
+    metrics.append([
+        model,
+        ap,
+        ap50,
+        ap75,
+        apl,
+        apm,
+        aps,
+        100 * recall,
+        100 * precision,
+        tp,
+        fp,
+    ])
+
     with open('.evaluate_log.txt', 'a') as log:
-        print(f'{det_filename}: {tp:,} (of {n_gt:,}), precision {precision*100:.1f} recall {recall*100:.1f}', file=log)
+        print(
+            f'{model:10s}: TP {tp:,} (GT {n_gt:,}, FP {fp:,}), '
+            f'PPV {precision*100:.1f} TPR {recall*100:.1f} - {det_filename}',
+            file=log
+        )
+        if args.full:
+            print('New Results: ', new_results, file=log)
+    print('-' * 79)
 
 # Summary
-
-print(r'Model & AP & APl & APm & APs \\')
+# Remember to define:
+# \newcommand\tsub[1]{\textsubscript{#1}}
+print(
+    r'Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}'
+    r' & AP\tsub{s} & TPR & PPV & \#TP & \#FP \\'
+)
+print(r'\midrule')
 for row in metrics:
-    model, ap, apl, apm, aps = row
-    print(f'{model} & {ap:.1f} & {apl:.1f} & {apm:.1f} & {aps:.1f} \\\\')
+    model, ap, ap50, ap75, apl, apm, aps, tpr, ppv, tp, fp = row
+    print(
+        f'{model} & {ap:.1f} & {ap50:.1f} & {ap75:.1f} & {apl:.1f} & {apm:.1f}'
+        f' & {aps:.1f} & {tpr:.1f} & {ppv:.1f} & {tp:,} & {fp:,} \\\\'
+    )
