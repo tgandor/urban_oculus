@@ -32,6 +32,8 @@ args = parser.parse_args()
 
 gt = COCO(ANNOTATIONS)
 
+metrics = []
+
 detFile = args.detection_file
 
 if os.path.isdir(detFile):
@@ -42,7 +44,7 @@ else:
     dump_dir = os.path.dirname(detFile)
 
 results_file = glob.glob(os.path.join(
-        dump_dir, "results.json*"))[0]
+    dump_dir, "results.json*"))[0]
 
 results = load(results_file)
 
@@ -110,7 +112,32 @@ if args.full:
     e_recall = np.mean(raw_recalls[raw_recalls > -1])
     print(f'Recall by .eval: {e_recall}')
 
-print(results['model'], {k: np.round(v, 1) for k, v in results['results']['bbox'].items() if '-' not in k})
+model = results['model'].replace('_', r'\_')
+ap = results['results']['bbox']['AP']
+apl = results['results']['bbox']['APl']
+apm = results['results']['bbox']['APm']
+aps = results['results']['bbox']['APs']
+
+metrics.append([
+    model,
+    ap,
+    apl,
+    apm,
+    aps,
+])
+
+print(
+    results['model'],
+    {
+        k: np.round(v, 1)
+        for k, v in results['results']['bbox'].items() if '-' not in k
+    }
+)
 
 with open('evaluate_log.txt', 'a') as log:
     print(f'{args.detection_file}: {tp:,} (of {n_gt:,}), precision {precision*100:.1f} recall {recall*100:.1f}', file=log)
+
+print(r'Model & AP & APl & APm & APs \\')
+for row in metrics:
+    model, ap, apl, apm, aps = row
+    print(f'{model} & {ap:.1f} & {apl:.1f} & {apm:.1f} & {aps:.1f} \\\\')
