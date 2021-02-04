@@ -35,6 +35,10 @@ parser.add_argument(
     help='confidence threshold for detections'
 )
 parser.add_argument(
+    '--top', '-n', type=int, default=3,
+    help='how many best and worst classes to report'
+)
+parser.add_argument(
     '--full', '-f', action='store_true',
     help='perform full accumulate / summarize'
 )
@@ -105,10 +109,11 @@ for detFile in args.detection_files:
     precision = tp / (tp + fp)
     assert tp + fp == len(detFile)
     alt_recall = tp / an_gt
+    f1 = 2 * precision * recall / (precision + recall)
 
     print(f'Total objects found in {det_filename}: {tp:,} (of {n_gt:,})')
     print(f'precision {precision*100:.1f} recall {recall*100:.1f}')
-    print(f'alt_recall {alt_recall*100:.1f}')
+    print(f'f1 score: {f1*100:.1f} alt_recall {alt_recall*100:.1f}')
 
     model = results['model'].replace('_', r'\_')
     ap = results['results']['bbox']['AP']
@@ -144,12 +149,12 @@ for detFile in args.detection_files:
         reverse=True
     )
     print(
-        'Top 3 classes (orig results):\n ',
-        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[:3])
+        f'Top {args.top} classes (orig results):\n ',
+        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[:args.top])
     )
     print(
-        'Bottom 3 classes (orig results):\n ',
-        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[-3:])
+        'Bottom {args.top} classes (orig results):\n ',
+        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[-args.top:])
     )
 
     metrics.append([
@@ -169,7 +174,7 @@ for detFile in args.detection_files:
     with open('.evaluate_log.txt', 'a') as log:
         print(
             f'{model:10s}: TP {tp:,} (GT {n_gt:,}, FP {fp:,}), '
-            f'PPV {precision*100:.1f} TPR {recall*100:.1f} - {det_filename}',
+            f'PPV {precision*100:.1f} TPR {recall*100:.1f} F1 {f1*100:.1f} - {det_filename}',
             file=log
         )
         if args.full:
