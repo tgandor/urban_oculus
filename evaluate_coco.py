@@ -179,6 +179,28 @@ for detFile in args.detection_files:
         )
         if args.full:
             print('New Results: ', new_results, file=log)
+
+    new_results_file = os.path.join(dump_dir, "rich_results.json")
+    bbox = {
+        k: v
+        for k, v in results['results']['bbox'].items()
+        if '-' not in k
+    }
+    rich_results = {
+        'quality': results['quality'],
+        'model': results['model'],
+        'elapsed': results['elapsed'],
+        'tp': int(tp), # TypeError: Object of type int64 is not JSON serializable...
+        'fp': int(fp),
+        'precision': precision,
+        'recall': recall,
+        'f1': f1,
+        **bbox
+    }
+    # import code; code.interact(local=locals())
+    with open(new_results_file, 'w') as jsf:
+        json.dump(rich_results, jsf)
+
     print('-' * 79)
 
 # Summary
