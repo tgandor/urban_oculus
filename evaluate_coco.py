@@ -72,6 +72,8 @@ for detFile in args.detection_files:
         detFile = [d for d in detFile if d['score'] > args.min_score]
         print(f'Filtered with T={args.min_score} to {len(detFile)} dets.')
 
+    min_score = min(d['score'] for d in detFile)
+
     dt = gt.loadRes(detFile)
 
     coco = COCOeval(gt, dt, iouType='bbox')
@@ -195,6 +197,7 @@ for detFile in args.detection_files:
         'precision': precision,
         'recall': recall,
         'f1': f1,
+        'min_score': min_score,
         **bbox
     }
     # import code; code.interact(local=locals())
