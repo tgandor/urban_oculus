@@ -1,7 +1,5 @@
 import argparse
-import bz2
 import glob
-import gzip
 import json
 import os
 

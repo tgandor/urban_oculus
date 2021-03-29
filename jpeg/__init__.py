@@ -22,9 +22,9 @@ def get_QTs(filename, with_id=False):
                 d = ord(f.read(1))
                 if d in markers.standalone:
                     continue
-                h = ord(f.read(1))
-                l = ord(f.read(1))
-                size = 256 * h + l
+                hi = ord(f.read(1))
+                lo = ord(f.read(1))
+                size = 256 * hi + lo
                 data = f.read(size - 2)  # 2 bytes already there
                 name = markers.names.get(d, hex(d))
                 if name == 'DQT':
