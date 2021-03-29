@@ -40,5 +40,43 @@ def get_QTs(filename, with_id=False):
     return results
 
 
+def _zigzag(n):
+    """Produce zig-zag coordinates (i, j) for (n x n) table."""
+    nzigs = 2 * n - 1
+    for zig in range(nzigs):
+        if zig % 2 == 0:
+            # odd (zigs): up (-1), right (1)
+            di, dj = -1, 1
+            i = min(zig, n-1)
+            j = zig - i
+        else:
+            # even (zags): down (1), left (-1)
+            di, dj = 1, -1
+            j = min(zig, n-1)
+            i = zig - j
+
+        # length: zig + 1 - growing, nzigs - zig - shrinking
+        len_zig = min(zig + 1, nzigs - zig)
+
+        # print('zig', zig)
+        for _ in range(len_zig):
+            yield i, j
+            i, j = i + di, j + dj
+
+
+def reorder(hex_src):
+    gen = _zigzag(8)
+    dest = [[0 for i in range(8)] for j in range(8)]
+
+    for (ti, tj), value in zip(gen, bytes.fromhex(hex_src)):
+        dest[ti][tj] = value
+
+    return dest
+
+
+def get_QTs2d(filename):
+    return [reorder(qt) for qt in get_QTs(filename)]
+
+
 def identify_quality(filename):
     return int(os.popen(f'identify -format %Q "{filename}"').read())

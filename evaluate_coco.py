@@ -190,7 +190,7 @@ for detFile in args.detection_files:
         'quality': results['quality'],
         'model': results['model'],
         'elapsed': results['elapsed'],
-        'tp': int(tp), # TypeError: Object of type int64 is not JSON serializable...
+        'tp': int(tp),  # TypeError: Object of type int64 is not JSON serializable...
         'fp': int(fp),
         'precision': precision,
         'recall': recall,
