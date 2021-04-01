@@ -15,8 +15,27 @@ args = parser.parse_args()
 
 filename = 'temp_for_qt.jpg'
 
-for q in trange(args.minQ, args.maxQ+1):
+HEADER = """
+# JPEG quantization tables
+
+Below are the quantization tables used in JPEG compression for Q parameter = 1, ..., 100
+"""
+
+verb = '-verbose'
+verb = ''
+rgen = range if verb else trange
+
+for q in rgen(args.minQ, args.maxQ+1):
     shutil.copy(args.filename, filename)
-    os.system(f"mogrify -verbose -quality {q} {filename}")
+    os.system(f"mogrify {verb} -quality {q} {filename}")
     qts = get_QTs2d(filename)
-    pprint.pprint(qts)
+    shutil.copy(args.filename, filename)
+    os.system(f"mogrify {verb} -type Grayscale -quality {q} {filename}")
+    qt = get_QTs2d(filename)[0]
+    assert qts[0] == qt, "Mono QT should be same as color QT1"
+    if qts[0] != qt:
+        print('For quality', q, '(QT1)')
+        pprint.pprint(qts[0])
+        print('vs')
+        pprint.pprint(qt)
+        print('---')
