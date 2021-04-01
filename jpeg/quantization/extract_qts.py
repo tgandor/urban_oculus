@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import os
 import pprint
@@ -30,7 +32,9 @@ TEMPLATE = """
 <tr><th>QT1 (luma or mono)</th><th>QT2 (chroma)</th></tr>
 
 <tr><td>
+
 {qt1_table}
+
 </td><td>
 
 {qt2_table}
@@ -54,6 +58,16 @@ def check(q, qt, qts):
         print('---')
 
 
+def qt_to_md(qt, html=False):
+    df = pd.DataFrame(qt)
+    if html:
+        df.columns.name = 'u'
+        df.index.name = 'v'
+        return df.to_html()
+    df.index.name = 'v&#8595; u&#8594;'
+    return df.to_markdown()
+
+
 with open("README.md", "w") as out_md:
     out_md.write(HEADER)
 
@@ -67,6 +81,6 @@ with open("README.md", "w") as out_md:
         check(q, qt, qts)
         out_md.write(TEMPLATE.format(
             q=q,
-            qt1_table=pd.DataFrame(qts[0]).to_markdown(),
-            qt2_table=pd.DataFrame(qts[1]).to_markdown(),
+            qt1_table=qt_to_md(qts[0]),
+            qt2_table=qt_to_md(qts[1]),
         ))
