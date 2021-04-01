@@ -17,12 +17,25 @@ parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=100)
 args = parser.parse_args()
 
 filename = 'temp_for_qt.jpg'
+NL = "\n"
 
-HEADER = """
+HEADER = f"""\
 # JPEG quantization tables
 
-Below are the quantization tables used in JPEG compression for Q parameter = 1, ..., 100
+Quantization tables used in JPEG compression for Q = 1, ..., 100
 
+## TOC
+
+Links to specific quality:
+
+{"|" + 10 * "             |"}
+{"|" + 10 * ":-----------:|"}
+{NL.join(
+    "| " +
+    " | ".join("%11s" % f"[{10*row+col+1}](#{10*row+col+1})" for col in range(10)) +
+    " |"
+    for row in range(10)
+)}
 """
 
 TEMPLATE = """
@@ -41,6 +54,8 @@ TEMPLATE = """
 
 </td></tr>
 </table>
+
+[TOC](#toc)
 """
 
 verb = '-verbose'

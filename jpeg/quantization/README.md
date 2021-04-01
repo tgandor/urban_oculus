@@ -1,8 +1,23 @@
-
 # JPEG quantization tables
 
-Below are the quantization tables used in JPEG compression for Q parameter = 1, ..., 100
+Quantization tables used in JPEG compression for Q = 1, ..., 100
 
+## TOC
+
+Links to specific quality:
+
+|             |             |             |             |             |             |             |             |             |             |
+|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|
+|     [1](#1) |     [2](#2) |     [3](#3) |     [4](#4) |     [5](#5) |     [6](#6) |     [7](#7) |     [8](#8) |     [9](#9) |   [10](#10) |
+|   [11](#11) |   [12](#12) |   [13](#13) |   [14](#14) |   [15](#15) |   [16](#16) |   [17](#17) |   [18](#18) |   [19](#19) |   [20](#20) |
+|   [21](#21) |   [22](#22) |   [23](#23) |   [24](#24) |   [25](#25) |   [26](#26) |   [27](#27) |   [28](#28) |   [29](#29) |   [30](#30) |
+|   [31](#31) |   [32](#32) |   [33](#33) |   [34](#34) |   [35](#35) |   [36](#36) |   [37](#37) |   [38](#38) |   [39](#39) |   [40](#40) |
+|   [41](#41) |   [42](#42) |   [43](#43) |   [44](#44) |   [45](#45) |   [46](#46) |   [47](#47) |   [48](#48) |   [49](#49) |   [50](#50) |
+|   [51](#51) |   [52](#52) |   [53](#53) |   [54](#54) |   [55](#55) |   [56](#56) |   [57](#57) |   [58](#58) |   [59](#59) |   [60](#60) |
+|   [61](#61) |   [62](#62) |   [63](#63) |   [64](#64) |   [65](#65) |   [66](#66) |   [67](#67) |   [68](#68) |   [69](#69) |   [70](#70) |
+|   [71](#71) |   [72](#72) |   [73](#73) |   [74](#74) |   [75](#75) |   [76](#76) |   [77](#77) |   [78](#78) |   [79](#79) |   [80](#80) |
+|   [81](#81) |   [82](#82) |   [83](#83) |   [84](#84) |   [85](#85) |   [86](#86) |   [87](#87) |   [88](#88) |   [89](#89) |   [90](#90) |
+|   [91](#91) |   [92](#92) |   [93](#93) |   [94](#94) |   [95](#95) |   [96](#96) |   [97](#97) |   [98](#98) |   [99](#99) | [100](#100) |
 
 ## 1
 
@@ -38,6 +53,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 2
 
 <table>
@@ -71,6 +89,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 3
 
@@ -106,6 +127,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 4
 
 <table>
@@ -139,6 +163,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 5
 
@@ -174,6 +201,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 6
 
 <table>
@@ -207,6 +237,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 7
 
@@ -242,6 +275,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 8
 
 <table>
@@ -275,6 +311,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 9
 
@@ -310,6 +349,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 10
 
 <table>
@@ -343,6 +385,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 11
 
@@ -378,6 +423,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 12
 
 <table>
@@ -411,6 +459,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 13
 
@@ -446,6 +497,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 14
 
 <table>
@@ -479,6 +533,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 15
 
@@ -514,6 +571,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 16
 
 <table>
@@ -547,6 +607,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 17
 
@@ -582,6 +645,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 18
 
 <table>
@@ -615,6 +681,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 19
 
@@ -650,6 +719,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 20
 
 <table>
@@ -683,6 +755,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 21
 
@@ -718,6 +793,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 22
 
 <table>
@@ -751,6 +829,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 23
 
@@ -786,6 +867,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 24
 
 <table>
@@ -819,6 +903,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 25
 
@@ -854,6 +941,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 26
 
 <table>
@@ -887,6 +977,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 27
 
@@ -922,6 +1015,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 28
 
 <table>
@@ -955,6 +1051,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 29
 
@@ -990,6 +1089,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 30
 
 <table>
@@ -1023,6 +1125,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 31
 
@@ -1058,6 +1163,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 32
 
 <table>
@@ -1091,6 +1199,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 33
 
@@ -1126,6 +1237,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 34
 
 <table>
@@ -1159,6 +1273,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 35
 
@@ -1194,6 +1311,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 36
 
 <table>
@@ -1227,6 +1347,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 37
 
@@ -1262,6 +1385,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 38
 
 <table>
@@ -1295,6 +1421,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 39
 
@@ -1330,6 +1459,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 40
 
 <table>
@@ -1363,6 +1495,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 41
 
@@ -1398,6 +1533,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 42
 
 <table>
@@ -1431,6 +1569,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 43
 
@@ -1466,6 +1607,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 44
 
 <table>
@@ -1499,6 +1643,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 45
 
@@ -1534,6 +1681,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 46
 
 <table>
@@ -1567,6 +1717,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 47
 
@@ -1602,6 +1755,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 48
 
 <table>
@@ -1635,6 +1791,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 49
 
@@ -1670,6 +1829,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 50
 
 <table>
@@ -1703,6 +1865,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 51
 
@@ -1738,6 +1903,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 52
 
 <table>
@@ -1771,6 +1939,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 53
 
@@ -1806,6 +1977,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 54
 
 <table>
@@ -1839,6 +2013,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 55
 
@@ -1874,6 +2051,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 56
 
 <table>
@@ -1907,6 +2087,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 57
 
@@ -1942,6 +2125,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 58
 
 <table>
@@ -1975,6 +2161,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 59
 
@@ -2010,6 +2199,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 60
 
 <table>
@@ -2043,6 +2235,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 61
 
@@ -2078,6 +2273,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 62
 
 <table>
@@ -2111,6 +2309,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 63
 
@@ -2146,6 +2347,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 64
 
 <table>
@@ -2179,6 +2383,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 65
 
@@ -2214,6 +2421,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 66
 
 <table>
@@ -2247,6 +2457,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 67
 
@@ -2282,6 +2495,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 68
 
 <table>
@@ -2315,6 +2531,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 69
 
@@ -2350,6 +2569,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 70
 
 <table>
@@ -2383,6 +2605,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 71
 
@@ -2418,6 +2643,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 72
 
 <table>
@@ -2451,6 +2679,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 73
 
@@ -2486,6 +2717,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 74
 
 <table>
@@ -2519,6 +2753,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 75
 
@@ -2554,6 +2791,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 76
 
 <table>
@@ -2587,6 +2827,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 77
 
@@ -2622,6 +2865,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 78
 
 <table>
@@ -2655,6 +2901,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 79
 
@@ -2690,6 +2939,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 80
 
 <table>
@@ -2723,6 +2975,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 81
 
@@ -2758,6 +3013,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 82
 
 <table>
@@ -2791,6 +3049,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 83
 
@@ -2826,6 +3087,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 84
 
 <table>
@@ -2859,6 +3123,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 85
 
@@ -2894,6 +3161,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 86
 
 <table>
@@ -2927,6 +3197,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 87
 
@@ -2962,6 +3235,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 88
 
 <table>
@@ -2995,6 +3271,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 89
 
@@ -3030,6 +3309,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 90
 
 <table>
@@ -3063,6 +3345,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 91
 
@@ -3098,6 +3383,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 92
 
 <table>
@@ -3131,6 +3419,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 93
 
@@ -3166,6 +3457,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 94
 
 <table>
@@ -3199,6 +3493,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 95
 
@@ -3234,6 +3531,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 96
 
 <table>
@@ -3267,6 +3567,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 97
 
@@ -3302,6 +3605,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 98
 
 <table>
@@ -3335,6 +3641,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
 
 ## 99
 
@@ -3370,6 +3679,9 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 </td></tr>
 </table>
 
+[TOC](#toc)
+
+
 ## 100
 
 <table>
@@ -3403,3 +3715,6 @@ Below are the quantization tables used in JPEG compression for Q parameter = 1, 
 
 </td></tr>
 </table>
+
+[TOC](#toc)
+
