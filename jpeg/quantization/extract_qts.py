@@ -64,7 +64,7 @@ def qt_to_md(qt, html=False):
         df.columns.name = 'u'
         df.index.name = 'v'
         return df.to_html()
-    df.index.name = 'v&#8595; u&#8594;'
+    df.index.name = 'u&#8594; <br> v&#8595;'
     return df.to_markdown()
 
 
