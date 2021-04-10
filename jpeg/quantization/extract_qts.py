@@ -99,3 +99,8 @@ with open("README.md", "w") as out_md:
             qt1_table=qt_to_md(qts[0]),
             qt2_table=qt_to_md(qts[1]),
         ))
+
+        with open(f"qts_{q:03d}.txt", "w") as qtxt:
+            for qt in qts:
+                for row in qt:
+                    print(''.join(f"{x:4d}" for x in row), file=qtxt)
