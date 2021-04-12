@@ -91,6 +91,9 @@ def recognize_QT_quality(filename, failsafe=False):
             return 0
         raise
 
+    if not qts:
+        return -1 if failsafe else None
+
     q = QT1_to_Q.get(qts[0])
 
     if q is None:
