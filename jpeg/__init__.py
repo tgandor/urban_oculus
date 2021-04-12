@@ -1,6 +1,6 @@
 import os
 from . import markers
-
+from .quantization.ijg_tables import QT1_to_Q, Q_to_QT2
 '''
 References:
 https://stackoverflow.com/questions/1557071/determining-the-size-of-a-jpeg-jfif-image#1602428
@@ -14,8 +14,8 @@ def get_QTs(filename, with_id=False):
     with open(filename, 'rb') as f:
         c = ord(f.read(1))
         d = ord(f.read(1))
-        assert c == 0xff
-        assert d == markers.markers['SOI']
+        assert c == 0xff, f"{filename}: JPG needs to start with SOI"
+        assert d == markers.markers['SOI'], f"{filename}: JPG needs to start with SOI"
         while True:
             c = ord(f.read(1))
             if c == 0xff:
@@ -80,3 +80,22 @@ def get_QTs2d(filename):
 
 def identify_quality(filename):
     return int(os.popen(f'identify -format %Q "{filename}"').read())
+
+
+def recognize_QT_quality(filename, failsafe=False):
+    try:
+        qts = get_QTs(filename)
+    except Exception as e:
+        if failsafe:
+            print(filename, e)
+            return 0
+        raise
+
+    q = QT1_to_Q.get(qts[0])
+
+    if q is None:
+        return 0 if failsafe else None
+
+    assert len(qts) == 1 or qts[1] == Q_to_QT2[q], f"{filename}: QT2 should match for Q={q}"
+
+    return q
