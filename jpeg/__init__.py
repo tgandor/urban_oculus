@@ -1,6 +1,6 @@
 import os
 from . import markers
-from .quantization.ijg_tables import QT1_to_Q, Q_to_QT2
+from .quantization.ijg_tables import QT1_to_Q, QT2_to_Q, Q_to_QT1, Q_to_QT2  # noqa.
 '''
 References:
 https://stackoverflow.com/questions/1557071/determining-the-size-of-a-jpeg-jfif-image#1602428
