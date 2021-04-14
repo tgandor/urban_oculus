@@ -115,3 +115,8 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
         plt.imshow(v_img)
     else:
         cv2_imshow(v_img[:, :, ::-1])
+
+
+def show_image_detections():
+    ...
+
