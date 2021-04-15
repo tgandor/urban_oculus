@@ -44,7 +44,12 @@ def qt_to_md(qt, html=False):
 
 
 def opencv_degrade(orig, filename, q, grayscale=False):
-    ...
+    import cv2
+    img = cv2.imread(
+        orig,
+        cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_UNCHANGED,
+    )
+    cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, q])
 
 
 def mogrify_degrade(orig, filename, q, grayscale=False):
