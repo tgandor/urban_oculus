@@ -3,25 +3,25 @@ import copy
 import gzip
 import json
 
-from collections import Counter
+from collections import Counter  # noqa
 
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
+from pycocotools.coco import COCO  # noqa
+from pycocotools.cocoeval import COCOeval  # noqa
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg, CfgNode
-from detectron2.data import (
+from detectron2.data import (  # noqa
     build_detection_test_loader,
     DatasetCatalog,
     MetadataCatalog,
 )
 from detectron2.data.catalog import Metadata
-from detectron2.engine import DefaultPredictor
-from detectron2.evaluation import COCOEvaluator, inference_on_dataset
+from detectron2.engine import DefaultPredictor  # noqa
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset  # noqa
 from detectron2.utils.visualizer import Visualizer
 
 import matplotlib.pyplot as plt
-import pandas as pd
+import pandas as pd  # noqa
 
 MODEL_ZOO_CONFIGS = {
     "R50_C4": "COCO-Detection/faster_rcnn_R_50_C4_3x.yaml",
@@ -119,4 +119,3 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
 
 def show_image_detections():
     ...
-

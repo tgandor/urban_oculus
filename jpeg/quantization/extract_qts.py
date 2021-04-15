@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('filename')
 parser.add_argument("--minQ", type=int, help="min JPEG quality", default=1)
 parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=100)
+parser.add_argument("--use-opencv", "-cv2", action="store_true")
 args = parser.parse_args()
 
 verb = '-verbose'
@@ -42,16 +43,28 @@ def qt_to_md(qt, html=False):
     return df.to_markdown()
 
 
+def opencv_degrade(orig, filename, q, grayscale=False):
+    ...
+
+
+def mogrify_degrade(orig, filename, q, grayscale=False):
+    gray = "-type Grayscale" if grayscale else ""
+    shutil.copy(orig, filename)
+    os.system(f"mogrify {verb} {gray} -quality {q} {filename}")
+
+
 def gen_qts(args):
+    degrade = opencv_degrade if args.use_opencv else mogrify_degrade
+
     for q in rgen(args.minQ, args.maxQ+1):
-        shutil.copy(args.filename, filename)
-        os.system(f"mogrify {verb} -quality {q} {filename}")
+        degrade(args.filename, filename, q)
         qts = get_QTs2d(filename)
         hex_qts = get_QTs(filename)
-        shutil.copy(args.filename, filename)
-        os.system(f"mogrify {verb} -type Grayscale -quality {q} {filename}")
+
+        degrade(args.filename, filename, q, True)
         qt = get_QTs2d(filename)[0]
         check(q, qt, qts)
+
         yield ns(
             q=q,
             qts=qts,
