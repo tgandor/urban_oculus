@@ -2,14 +2,17 @@
 
 from types import SimpleNamespace as ns
 import argparse
-import os
 import pprint
-import shutil
 
 from tqdm import trange
 import pandas as pd
 
-from jpeg import get_QTs, get_QTs2d
+from jpeg import (
+    get_QTs,
+    get_QTs2d,
+    mogrify_degrade,
+    opencv_degrade,
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
@@ -17,10 +20,6 @@ parser.add_argument("--minQ", type=int, help="min JPEG quality", default=1)
 parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=100)
 parser.add_argument("--use-opencv", "-cv2", action="store_true")
 args = parser.parse_args()
-
-verb = '-verbose'
-verb = ''
-rgen = range if verb else trange
 
 
 def check(q, qt, qts):
@@ -43,25 +42,10 @@ def qt_to_md(qt, html=False):
     return df.to_markdown()
 
 
-def opencv_degrade(orig, filename, q, grayscale=False):
-    import cv2
-    img = cv2.imread(
-        orig,
-        cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_UNCHANGED,
-    )
-    cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, q])
-
-
-def mogrify_degrade(orig, filename, q, grayscale=False):
-    gray = "-type Grayscale" if grayscale else ""
-    shutil.copy(orig, filename)
-    os.system(f"mogrify {verb} {gray} -quality {q} {filename}")
-
-
 def gen_qts(args):
     degrade = opencv_degrade if args.use_opencv else mogrify_degrade
 
-    for q in rgen(args.minQ, args.maxQ+1):
+    for q in trange(args.minQ, args.maxQ+1):
         degrade(args.filename, filename, q)
         qts = get_QTs2d(filename)
         hex_qts = get_QTs(filename)

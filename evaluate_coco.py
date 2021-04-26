@@ -196,6 +196,7 @@ for detFile in args.detection_files:
         'recall': recall,
         'f1': f1,
         'min_score': min_score,
+        'score_T': args.min_score,
         **bbox
     }
     # import code; code.interact(local=locals())

@@ -1,6 +1,7 @@
 import os
 from . import markers
 from .quantization.ijg_tables import QT1_to_Q, QT2_to_Q, Q_to_QT1, Q_to_QT2  # noqa.
+
 '''
 References:
 https://stackoverflow.com/questions/1557071/determining-the-size-of-a-jpeg-jfif-image#1602428
@@ -102,3 +103,20 @@ def recognize_QT_quality(filename, failsafe=False):
     assert len(qts) == 1 or qts[1] == Q_to_QT2[q], f"{filename}: QT2 should match for Q={q}"
 
     return q
+
+
+def opencv_degrade(orig, filename, q, grayscale=False):
+    import cv2
+    img = cv2.imread(
+        orig,
+        cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_UNCHANGED,
+    )
+    cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, q])
+
+
+def mogrify_degrade(orig, filename, q, grayscale=False):
+    assert orig.endswith('.jpg'), 'mogrify_degrade() only works with JPG files.'
+    import shutil
+    gray = "-type Grayscale" if grayscale else ""
+    shutil.copy(orig, filename)
+    os.system(f"mogrify {gray} -quality {q} {filename}")
