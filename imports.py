@@ -117,5 +117,13 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
         cv2_imshow(v_img[:, :, ::-1])
 
 
+class Names:
+    def __init__(self, meta: Metadata) -> None:
+        self.meta = meta
+
+    def get(self, id: int) -> str:
+        return self.meta.thing_classes[self.meta.thing_dataset_id_to_contiguous_id[id]]
+
+
 def show_image_detections():
     ...

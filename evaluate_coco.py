@@ -19,60 +19,74 @@ ANNOTATIONS = 'datasets/coco/annotations/instances_val2017.json'
 # from detectron2.data import MetadataCatalog
 # ANNOTATIONS = MetadataCatalog.get('coco_2017_val').json_file
 
-if not os.path.exists(ANNOTATIONS):
-    print('Please symlink datasets/ or unzip annotations_trainval2017.zip to datasets/coco/')
-    exit()
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    'detection_files', nargs='+',
-    help='path to coco_instances_results.json[.gz|.bz2|], or folder'
-)
-parser.add_argument(
-    '--min-score', '-t', type=float,
-    help='confidence threshold for detections'
-)
-parser.add_argument(
-    '--top', '-n', type=int, default=3,
-    help='how many best and worst classes to report'
-)
-parser.add_argument(
-    '--full', '-f', action='store_true',
-    help='perform full accumulate / summarize'
-)
-args = parser.parse_args()
+def parse_cli() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'detection_files', nargs='+',
+        help='path to coco_instances_results.json[.gz|.bz2|], or folder'
+    )
+    parser.add_argument(
+        '--min-score', '-t', type=float,
+        help='confidence threshold for detections'
+    )
+    parser.add_argument(
+        '--top', '-n', type=int, default=3,
+        help='how many best and worst classes to report'
+    )
+    parser.add_argument(
+        '--full', '-f', action='store_true',
+        help='perform full accumulate / summarize'
+    )
+    return parser.parse_args()
 
-gt = COCO(ANNOTATIONS)
 
-metrics = []
+def load_gt():
+    if not os.path.exists(ANNOTATIONS):
+        print('Please symlink datasets/ or unzip annotations_trainval2017.zip to datasets/coco/')
+        exit()
 
-for detFile in args.detection_files:
-    print(f'Processing {detFile}')
+    return COCO(ANNOTATIONS)
 
-    det_filename = detFile
-    if os.path.isdir(detFile):
-        dump_dir = detFile
+
+def load_detections_results(file_or_dir):
+    if os.path.isdir(file_or_dir):
+        dump_dir = file_or_dir
         det_filename = glob.glob(os.path.join(
             dump_dir, "coco_instances_results.json*"))[0]
     else:
-        dump_dir = os.path.dirname(detFile)
+        dump_dir = os.path.dirname(file_or_dir)
+        det_filename = file_or_dir
 
-    results_file = glob.glob(os.path.join(
-        dump_dir, "results.json*"))[0]
+    results_file = glob.glob(os.path.join(dump_dir, "results.json*"))[0]
 
     results = load(results_file)
 
-    detFile = load(det_filename)
+    detections = load(det_filename)
 
-    print(f'Loaded dets by {results["model"]}, count = {len(detFile):,}.')
+    print(f'Loaded dets by {results["model"]}, count = {len(detections):,}.')
+
+    return detections, results, dump_dir, det_filename
+
+
+args = parse_cli()
+gt = load_gt()
+
+
+metrics = []
+
+for df in args.detection_files:
+    print(f'Processing {df}')
+
+    detections, results, dump_dir, det_filename = load_detections_results(df)
 
     if args.min_score:
-        detFile = [d for d in detFile if d['score'] > args.min_score]
-        print(f'Filtered with T={args.min_score} to {len(detFile)} dets.')
+        detections = [d for d in detections if d['score'] > args.min_score]
+        print(f'Filtered with T={args.min_score} to {len(detections)} dets.')
 
-    min_score = min(d['score'] for d in detFile)
+    min_score = min(d['score'] for d in detections)
 
-    dt = gt.loadRes(detFile)
+    dt = gt.loadRes(detections)
 
     coco = COCOeval(gt, dt, iouType='bbox')
 
@@ -107,7 +121,7 @@ for detFile in args.detection_files:
 
     recall = tp / n_gt
     precision = tp / (tp + fp)
-    assert tp + fp == len(detFile)
+    assert tp + fp == len(detections)
     alt_recall = tp / an_gt
     f1 = 2 * precision * recall / (precision + recall)
 
@@ -190,7 +204,8 @@ for detFile in args.detection_files:
         'quality': results['quality'],
         'model': results['model'],
         'elapsed': results['elapsed'],
-        'tp': int(tp),  # TypeError: Object of type int64 is not JSON serializable...
+        # TypeError: Object of type int64 is not JSON serializable...
+        'tp': int(tp),
         'fp': int(fp),
         'precision': precision,
         'recall': recall,
