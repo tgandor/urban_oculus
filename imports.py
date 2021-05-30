@@ -4,6 +4,7 @@ import gzip
 import json
 
 from collections import Counter  # noqa
+from itertools import islice
 
 from pycocotools.coco import COCO  # noqa
 from pycocotools.cocoeval import COCOeval  # noqa
@@ -18,6 +19,7 @@ from detectron2.data import (  # noqa
 from detectron2.data.catalog import Metadata
 from detectron2.engine import DefaultPredictor  # noqa
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset  # noqa
+from detectron2.structures import BoxMode  # noqa
 from detectron2.utils.visualizer import Visualizer
 
 import matplotlib.pyplot as plt
@@ -134,6 +136,15 @@ class Names:
 
     def name_to_idx(self, name):
         return self.name_to_i.get(name)
+
+    @property
+    def all(self):
+        """Return all class names."""
+        return self.meta.thing_classes
+
+
+def top(iterable, n=10):
+    return list(islice(iterable, n))
 
 
 def show_image_detections():

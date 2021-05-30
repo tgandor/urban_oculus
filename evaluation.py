@@ -48,15 +48,14 @@ class DetectionResults:
         det_file_or_dir,
         *,
         dataset="coco_2017_val",
+        rounding=True,
         use_cats=True,
         area_rng=False,
         iou_thresh=(0.5,),
     ):
-        self.detections, self.det_file = _load_detections(det_file_or_dir)
-        self.gt = _load_gt(dataset)
-        self.names = Names(MetadataCatalog.get(dataset))
-        self.dt = self.gt.loadRes(self.detections)
-        self.coco = COCOeval(self.gt, self.dt, iouType="bbox")
+        self.dataset = dataset
+        self.input = det_file_or_dir
+        self.rounding = rounding
         # COCOeval params
         self.use_cats = use_cats
         self.area_rng = area_rng
@@ -66,14 +65,22 @@ class DetectionResults:
         self._enrich_detections()
 
     def _evaluate(self):
+        self.detections, self.det_file = _load_detections(self.input)
+        self.gt = _load_gt(self.dataset)
+        self.names = Names(MetadataCatalog.get(self.dataset))
+        self.dt = self.gt.loadRes(self.detections)
+        self.coco = COCOeval(self.gt, self.dt, iouType="bbox")
+
         # don't evalImage for 'small', 'medium', 'large'
         if self.area_rng is False:
             self.coco.params.areaRng = [[0.0, 1e9]]
         elif self.area_rng is not None:
             self.coco.params.areaRng = self.area_rng
-        # don't segregate objects by category
+
+        # do or don't segregate objects by category
         self.coco.params.useCats = self.use_cats
-        # usa a single IoU threshold
+
+        # set IoU threshold(s)
         if self.iou_thresh is not None:
             self.coco.params.iouThrs = self.iou_thresh
 
@@ -110,14 +117,15 @@ class DetectionResults:
             d: dict
             del d["segmentation"]
             del d["id"]
-            del d["iscrowd"]  # for now?
-            d["score"] = round(d["score"], 5)
+            # del d["iscrowd"]
             d.setdefault("true_positive", False)
-            if "iou" in d:
-                d["iou"] = round(d["iou"], 3)
-            d["bbox"] = [round(x, 1) for x in d["bbox"]]
-            d["area"] = round(d["area"], 1)
-            # last key:
+            if self.rounding:
+                d["score"] = round(d["score"], 5)
+                d["bbox"] = [round(x, 1) for x in d["bbox"]]
+                d["area"] = round(d["area"], 1)
+                if "iou" in d:
+                    d["iou"] = round(d["iou"], 3)
+            # replace category_id with category name, as last key:
             d["category"] = self.names.get(d["category_id"])
             del d["category_id"]
 
