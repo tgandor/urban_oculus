@@ -15,16 +15,19 @@ from pycocotools.cocoeval import COCOeval
 from imports import load, Names
 
 
-def _load_gt(dataset):
-    path = MetadataCatalog.get("coco_2017_val").json_file
+def _load_gt(dataset, del_mask=True):
+    path = MetadataCatalog.get(dataset).json_file
     if not os.path.exists(path):
-        print(f"Missing {path}")
-        print(
-            "Please symlink datasets/ or unzip annotations_trainval2017.zip to datasets/coco/"
-        )
+        print(f"Missing annotations JSON: {path}")
         exit()
 
-    return COCO(path)
+    result = COCO(path)
+
+    if del_mask:
+        for ann in result.dataset["annotations"]:
+            del ann["segmentation"]
+
+    return result
 
 
 def _load_detections(file_or_dir):
@@ -40,6 +43,19 @@ def _load_detections(file_or_dir):
     detections = load(det_filename)
 
     return detections, det_filename
+
+
+def compute_iou(x):
+    def segment_overlap(x1, x2, y1, y2):
+        return max(0, min(x2, y2) - max(x1, y1))
+    left1, top1, w1, h1 = x["bbox"]
+    left2, top2, w2, h2 = x["gt_bbox"]
+    intersection = (
+        segment_overlap(left1, left1+w1, left2, left2+w2)
+        * segment_overlap(top1, top1+h1, top2, top2+h2)
+    )
+    union = w1 * h1 + w2 * h2 - intersection
+    return intersection / union
 
 
 class DetectionResults:
@@ -61,13 +77,13 @@ class DetectionResults:
         self.area_rng = area_rng
         self.iou_thresh = iou_thresh
         # process
+        self.names = Names(MetadataCatalog.get(self.dataset))
         self._evaluate()
         self._enrich_detections()
 
     def _evaluate(self):
         self.detections, self.det_file = _load_detections(self.input)
         self.gt = _load_gt(self.dataset)
-        self.names = Names(MetadataCatalog.get(self.dataset))
         self.dt = self.gt.loadRes(self.detections)
         self.coco = COCOeval(self.gt, self.dt, iouType="bbox")
 
@@ -108,9 +124,14 @@ class DetectionResults:
                     dt_id = int(fdt_id)
                     if not dt_id:
                         continue
-                    self.detections[dt_id - 1]["true_positive"] = True
-                    dind = dt_id2dind[dt_id]
-                    self.detections[dt_id - 1]["iou"] = ious[dind, gind]
+                    detection = self.detections[dt_id - 1]
+                    dind = dt_id2dind[dt_id]  # per-image detection idx
+                    gt_id = img["gtIds"][gind]
+                    detection["true_positive"] = True
+                    detection["iou"] = ious[dind, gind]
+                    detection["gt_id"] = gt_id
+                    annotation = self.gt.anns[gt_id]
+                    detection["gt_bbox"] = annotation["bbox"]
 
     def _enrich_detections(self):
         for d in self.detections:
