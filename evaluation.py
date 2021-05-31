@@ -9,19 +9,23 @@ from detectron2.data import (  # noqa
     MetadataCatalog,
 )
 
+import numpy as np
+
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
 from imports import load, Names
 
 
-def _load_gt(dataset, del_mask=True):
+def _load_gt(dataset, del_mask=True, debug=None):
     path = MetadataCatalog.get(dataset).json_file
     if not os.path.exists(path):
         print(f"Missing annotations JSON: {path}")
         exit()
-
-    result = COCO(path)
+    kwargs = {}
+    if debug is not None:
+        kwargs['debug'] = debug
+    result = COCO(path, **kwargs)
 
     if del_mask:
         for ann in result.dataset["annotations"]:
@@ -59,6 +63,13 @@ def compute_iou(x):
 
 
 class DetectionResults:
+    """
+    Attributes:
+        debug: int debug level of COCO and COCOeval
+            This only works with my fork:
+            https://github.com/tgandor/cocoapi/tree/reformatted
+    """
+
     def __init__(
         self,
         det_file_or_dir,
@@ -68,10 +79,12 @@ class DetectionResults:
         use_cats=True,
         area_rng=False,
         iou_thresh=(0.5,),
+        debug=None,
     ):
         self.dataset = dataset
         self.input = det_file_or_dir
         self.rounding = rounding
+        self.debug = debug
         # COCOeval params
         self.use_cats = use_cats
         self.area_rng = area_rng
@@ -83,9 +96,13 @@ class DetectionResults:
 
     def _evaluate(self):
         self.detections, self.det_file = _load_detections(self.input)
-        self.gt = _load_gt(self.dataset)
+        self.gt = _load_gt(self.dataset, debug=self.debug)
         self.dt = self.gt.loadRes(self.detections)
-        self.coco = COCOeval(self.gt, self.dt, iouType="bbox")
+
+        kwargs = {}
+        if self.debug is not None:
+            kwargs['debug'] = self.debug
+        self.coco = COCOeval(self.gt, self.dt, iouType="bbox", **kwargs)
 
         # don't evalImage for 'small', 'medium', 'large'
         if self.area_rng is False:
@@ -156,6 +173,7 @@ class DetectionResults:
 
     @property
     def detections_by_score(self):
+        # sorted() is stable, so np.argsort(kind="mergesort") is no issue
         return sorted(self.detections, key=itemgetter("score"), reverse=True)
 
     def detections_by_class(self, name: str):
@@ -170,11 +188,40 @@ class DetectionResults:
             if cat_id == cls_id
         )
 
+    def average_precision(self, category: str, t_iou: float = 0.5):
+        dets = self.detections_by_class(category)
+        TP = np.cumsum([det.get('iou', 0) >= t_iou for det in dets])
+        FP = np.cumsum([det.get('iou', 0) < t_iou for det in dets])
+        nGT = self.num_gt_class(category)
+        TPR = TP / nGT
+        PPV = TP / (TP + FP)
+        PPVi = interpolated_PPV(PPV)
+        recThrs = self.coco.params.recThrs
+        inds = np.searchsorted(TPR, recThrs, side="left")
+        q = np.zeros_like(recThrs)
+        for ri, pi in enumerate(inds):
+            if pi >= len(PPVi):
+                break
+            q[ri] = PPVi[pi]
+        return np.mean(q)
+
+    def mean_average_precision(self, t_iou: float = 0.5):
+        """mAP metric."""
+        return np.mean([self.average_precision(c, t_iou) for c in self.names.all])
+
 
 def _main():
     res = DetectionResults(sys.argv[1])
     for d in res.detections_by_score:
         print(d)
+
+
+def interpolated_PPV(ppv):
+    """Set precision to max(current, max(following)), so called p_interp."""
+    ppvl = ppv.tolist()
+    for k in range(len(ppvl)-1, 0, -1):
+        ppvl[k-1] = max(ppvl[k-1], ppvl[k])
+    return np.array(ppvl)
 
 
 if __name__ == "__main__":
