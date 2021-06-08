@@ -211,7 +211,7 @@ class DetectionResults:
 
 
 def _main():
-    res = DetectionResults(sys.argv[1])
+    res = DetectionResults(sys.argv[1], debug=0)
     for d in res.detections_by_score:
         print(d)
 
@@ -222,6 +222,22 @@ def interpolated_PPV(ppv):
     for k in range(len(ppvl)-1, 0, -1):
         ppvl[k-1] = max(ppvl[k-1], ppvl[k])
     return np.array(ppvl)
+
+
+def resample_pr_curve(tpr, ppvi, thresholds=None):
+    """Find precision values for recall thresholds. see COCOeval.accumulate()"""
+    if thresholds is None:
+        thresholds = np.linspace(0.0, 1.00, 101, endpoint=True)
+
+    precision = np.zeros_like(thresholds)
+    inds = np.searchsorted(tpr, thresholds, side="left")
+
+    for ri, pi in enumerate(inds):
+        if pi >= len(ppvi):
+            break
+        precision[ri] = ppvi[pi]
+
+    return thresholds, precision
 
 
 if __name__ == "__main__":
