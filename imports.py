@@ -11,12 +11,13 @@ from pycocotools.cocoeval import COCOeval  # noqa
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg, CfgNode
+from detectron2.data.catalog import Metadata
 from detectron2.data import (  # noqa
     build_detection_test_loader,
     DatasetCatalog,
     MetadataCatalog,
 )
-from detectron2.data.catalog import Metadata
+
 from detectron2.engine import DefaultPredictor  # noqa
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset  # noqa
 from detectron2.structures import BoxMode  # noqa
@@ -24,6 +25,8 @@ from detectron2.utils.visualizer import Visualizer
 
 import matplotlib.pyplot as plt
 import pandas as pd  # noqa
+
+from uo.utils import *
 
 MODEL_ZOO_CONFIGS = {
     "R50_C4": "COCO-Detection/faster_rcnn_R_50_C4_3x.yaml",
@@ -43,33 +46,6 @@ def conf(model: str) -> CfgNode:
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(model_config))
     return cfg
-
-
-def load(path: str) -> dict:
-    if path.endswith(".json.gz"):
-        with gzip.open(path) as fs:
-            return json.load(fs)
-    if path.endswith(".json.bz2"):
-        with bz2.open(path) as fs:
-            return json.load(fs)
-    if path.endswith(".json"):
-        with open(path) as fs:
-            return json.load(fs)
-    raise ValueError("unknown file type")
-
-
-def is_notebook():
-    # https://stackoverflow.com/a/39662359/1338797
-    try:
-        shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":
-            return True  # Jupyter notebook or qtconsole
-        elif shell == "TerminalInteractiveShell":
-            return False  # Terminal running IPython
-        else:
-            return False  # Other type (?)
-    except NameError:
-        return False  # Probably standard Python interpreter
 
 
 def cv2_imshow(a):
@@ -118,33 +94,6 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
         plt.imshow(v_img)
     else:
         cv2_imshow(v_img[:, :, ::-1])
-
-
-class Names:
-    def __init__(self, meta: Metadata) -> None:
-        self.meta = meta
-        self.idx_to_id = {
-            v: k for k, v in self.meta.thing_dataset_id_to_contiguous_id.items()
-        }
-        self.name_to_i = {v: i for i, v in enumerate(self.meta.thing_classes)}
-
-    def get(self, id: int) -> str:
-        return self.meta.thing_classes[self.meta.thing_dataset_id_to_contiguous_id[id]]
-
-    def name_to_id(self, name):
-        return self.idx_to_id.get(self.name_to_idx(name))
-
-    def name_to_idx(self, name):
-        return self.name_to_i.get(name)
-
-    @property
-    def all(self):
-        """Return all class names."""
-        return self.meta.thing_classes
-
-
-def top(iterable, n=10):
-    return list(islice(iterable, n))
 
 
 def show_image_detections():
