@@ -19,8 +19,6 @@ result = []
 
 for new_id, obj in zip(count(1), gt.dataset["annotations"]):
     obj["area"] = round(obj["area"], 1)
-    obj["gt_id"] = new_id
-    del obj["id"]
     obj["category"] = gt.cats[obj["category_id"]]["name"]
     del obj["category_id"]
     if args.bbox:

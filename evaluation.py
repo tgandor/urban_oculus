@@ -1,6 +1,10 @@
+import argparse
 import glob
+from io import IncrementalNewlineDecoder
+import json
 from operator import itemgetter
 import os
+from pathlib import Path
 import sys
 import time
 
@@ -78,7 +82,7 @@ class DetectionResults:
         rounding=True,
         use_cats=True,
         area_rng=False,
-        iou_thresh=(0.5,),
+        iou_thresh=0.5,
         debug=None,
     ):
         self.dataset = dataset
@@ -115,7 +119,7 @@ class DetectionResults:
 
         # set IoU threshold(s)
         if self.iou_thresh is not None:
-            self.coco.params.iouThrs = self.iou_thresh
+            self.coco.params.iouThrs = [self.iou_thresh]
 
         self.coco.evaluate()
 
@@ -123,7 +127,7 @@ class DetectionResults:
         nArea = len(self.coco.params.areaRng)
         nImgs = len(self.coco.params.imgIds)
 
-        print("nCats:", nCats, len(self.coco.evalImgs), nCats * nArea * nImgs)
+        # print("nCats:", nCats, len(self.coco.evalImgs), nCats * nArea * nImgs)
         assert len(self.coco.evalImgs) == nCats * nArea * nImgs
 
         for catIx in range(nCats):
@@ -144,19 +148,19 @@ class DetectionResults:
                     detection = self.detections[dt_id - 1]
                     dind = dt_id2dind[dt_id]  # per-image detection idx
                     gt_id = img["gtIds"][gind]
-                    detection["true_positive"] = True
+                    # detection["true_positive"] = True
                     detection["iou"] = ious[dind, gind]
                     detection["gt_id"] = gt_id
-                    annotation = self.gt.anns[gt_id]
-                    detection["gt_bbox"] = annotation["bbox"]
+                    # annotation = self.gt.anns[gt_id]
+                    # detection["gt_bbox"] = annotation["bbox"]
 
     def _enrich_detections(self):
         for d in self.detections:
             d: dict
             del d["segmentation"]
             del d["id"]
-            # del d["iscrowd"]
-            d.setdefault("true_positive", False)
+            del d["iscrowd"]
+            # d.setdefault("true_positive", False)
             if self.rounding:
                 d["score"] = round(d["score"], 5)
                 d["bbox"] = [round(x, 1) for x in d["bbox"]]
@@ -166,6 +170,9 @@ class DetectionResults:
             # replace category_id with category name, as last key:
             d["category"] = self.names.get(d["category_id"])
             del d["category_id"]
+            del d["area"]  # purely derivative from w*h (mod rounding)
+            d["x"], d["y"], d["w"], d["h"] = d["bbox"]
+            del d["bbox"]
 
     @property
     def num_gt_all(self):
@@ -211,9 +218,24 @@ class DetectionResults:
 
 
 def _main():
-    res = DetectionResults(sys.argv[1], debug=0)
-    for d in res.detections_by_score:
-        print(d)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('detection_files', nargs='+')
+    parser.add_argument('--output', '-o', default='detections.json',  type=Path)
+    parser.add_argument('--verbose', '-v', action='store_true')
+    parser.add_argument('--min-iou', type=float)
+    args = parser.parse_args()
+
+    detections = []
+
+    for detection_file in args.detection_files:
+        res = DetectionResults(detection_file, debug=0, iou_thresh=args.min_iou)
+        for d in res.detections:
+            if args.verbose:
+                print(d)
+            detections.append(d)
+
+    with args.output.open("w") as jsf:
+        json.dump(detections, jsf, indent=2)
 
 
 def interpolated_PPV(ppv):
