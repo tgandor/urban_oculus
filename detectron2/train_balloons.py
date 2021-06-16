@@ -17,8 +17,8 @@ import time
 import cv2
 
 # download, decompress the data
-#!wget https://github.com/matterport/Mask_RCNN/releases/download/v2.1/balloon_dataset.zip
-#!unzip balloon_dataset.zip > /dev/null
+# !wget https://github.com/matterport/Mask_RCNN/releases/download/v2.1/balloon_dataset.zip
+# !unzip balloon_dataset.zip > /dev/null
 
 # if your dataset is in COCO format, this cell can be replaced by the following three lines:
 # from detectron2.data.datasets import register_coco_instances

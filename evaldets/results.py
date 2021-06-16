@@ -30,6 +30,8 @@ def _load_gt(dataset, del_mask=True, debug=None):
 
 
 def _load_detections(file_or_dir):
+    file_or_dir = os.path.expanduser(file_or_dir)
+
     if os.path.isdir(file_or_dir):
         dump_dir = file_or_dir
         det_filename = glob.glob(
@@ -61,7 +63,7 @@ class DetectionResults:
         use_cats=True,
         area_rng=False,
         iou_thresh=0.5,
-        debug=None,
+        debug=0,
     ):
         self.dataset = dataset
         self.input = det_file_or_dir
@@ -151,6 +153,15 @@ class DetectionResults:
             del d["area"]  # purely derivative from w*h (mod rounding)
             d["x"], d["y"], d["w"], d["h"] = d["bbox"]
             del d["bbox"]
+
+    def __iter__(self):
+        return iter(self.detections)
+
+    def __len__(self):
+        return len(self.detections)
+
+    def __getitem__(self, idx):
+        return self.detections[idx]
 
     @property
     def num_gt_all(self):
