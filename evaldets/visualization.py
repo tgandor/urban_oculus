@@ -87,23 +87,30 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
         cv2_imshow(v_img[:, :, ::-1])
 
 
-def show_image_detection(det: dict, mpl=False, scale=1.0, *, v=0):
-    visualizer = visualizer_for_id(det["image_id"], scale=scale)
-    boxes = [[det[k] for k in "xywh"]]
-    iou_label = f'IoU={det.get("iou", 0):.3f}' if "gt_id" in det else "(FP)"
-    labels = [f'{det["category"]} p={det["score"]:.3f} {iou_label}']
-
-    if "gt_id" in det:
-        gt = GT[det["gt_id"]]
-        boxes.append(gt["bbox"])
-        labels.append("GT" + (" (crowd)" if gt["iscrowd"] else ""))
-
+def draw_box(visualizer, box, label):
+    boxes = [box]
+    labels = [label]
     boxes = BoxMode.convert(np.array(boxes), BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
     vis = visualizer.overlay_instances(boxes=boxes, labels=labels)
-    v_img = vis.get_image()
+    return vis.get_image()
+
+
+def show_image_detection(det: dict, mpl=False, scale=1.0, *, v=0):
+    visualizer = visualizer_for_id(det["image_id"], scale=scale)
+
+    if "gt_id" in det:
+        # GT first, below detection
+        gt = GT[det["gt_id"]]
+        gt_label = f"GT#{gt['id']}" + (" (crowd)" if gt["iscrowd"] else "")
+        draw_box(visualizer, gt['bbox'], gt_label)
+
+    bbox = [det[k] for k in "xywh"]
+    iou_label = f'IoU={det.get("iou", 0):.3f}' if "gt_id" in det else "(FP)"
+    label = f'{det["category"]} p={det["score"]:.3f} {iou_label}'
+    v_img = draw_box(visualizer, bbox, label)
 
     if v:
-        print(f'img={det["image_id"]}: {labels[0]}')
+        print(f'img={det["image_id"]}: {label} {gt_label}')
 
     if mpl:
         plt.imshow(v_img)
