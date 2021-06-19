@@ -1,7 +1,8 @@
 import copy
-import itertools
+from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
+from typing import Collection
 
 import cv2
 from detectron2.data import MetadataCatalog
@@ -51,11 +52,11 @@ class DatasetIndex:
     @property
     def gt_on_img(self):
         if self.image_objects is None:
-            key = itemgetter("image_id")
+            k = itemgetter("image_id")
             self.image_objects = {
                 key: list(value)
-                for key, value in itertools.groupby(
-                    sorted(self.gt.values(), key=key), key=key
+                for key, value in groupby(
+                    sorted(self.gt.values(), key=k), key=k
                 )
             }
         return self.image_objects
@@ -147,24 +148,40 @@ def show_image_objects(image_id, *, show_ids=True):
     cv2_imshow(v_img[:, :, ::-1])
 
 
-def show_image_detection(det: dict, mpl=False, scale=1.0, *, v=0):
-    visualizer = visualizer_for_id(det["image_id"], scale=scale)
+def show_detection(det: dict, mpl=False, scale=1.0, *, v=0):
+    show_detections([det], mpl, scale, v=v)
 
-    if "gt_id" in det:
-        # GT first, below detection
-        gt = DSI.gt[det["gt_id"]]
-        gt_label = f"GT#{gt['id']}" + (" (crowd)" if gt["iscrowd"] else "")
-        draw_box(visualizer, gt["bbox"], gt_label)
 
-    bbox = [det[k] for k in "xywh"]
-    iou_label = f'J={det.get("iou", 0)*100:.1f}' if "gt_id" in det else "(FP)"
-    label = f'{det["category"]} {det["score"]*100:.1f} {iou_label}'
-    v_img = draw_box(visualizer, bbox, label)
+def show_detections(dets: Collection[dict], mpl=False, scale=1.0, *, v=0):
+    k = itemgetter('image_id')
+    for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
+        visualizer = visualizer_for_id(image_id, scale=scale)
 
-    if v:
-        print(f'img={det["image_id"]}: {label} {gt_label}')
+        gt_boxes = []
+        gt_labels = []
+        boxes = []
+        labels = []
 
-    if mpl:
-        plt.imshow(v_img)
-    else:
-        cv2_imshow(v_img[:, :, ::-1])
+        for det in img_dets:
+            if "gt_id" in det:
+                gt = DSI.gt[det["gt_id"]]
+                gt_label = f"GT#{gt['id']}" + (" (crowd)" if gt["iscrowd"] else "")
+                gt_boxes.append(gt["bbox"])
+                gt_labels.append(gt_label)
+
+            bbox = [det[k] for k in "xywh"]
+            iou_label = f'J={det.get("iou", 0)*100:.1f}' if "gt_id" in det else "(FP)"
+            label = f'{det["category"]} {det["score"]*100:.1f} {iou_label}'
+            boxes.append(bbox)
+            labels.append(label)
+
+            if v:
+                print(f'img={det["image_id"]}: {label} {gt_label}')
+
+        draw_boxes(visualizer, gt_boxes, gt_labels)
+        v_img = draw_boxes(visualizer, boxes, labels)
+
+        if mpl:
+            plt.imshow(v_img)
+        else:
+            cv2_imshow(v_img[:, :, ::-1])
