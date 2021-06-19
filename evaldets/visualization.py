@@ -14,6 +14,7 @@ import numpy as np
 
 from uo.utils import is_notebook, load
 from .names import Names
+from .results import DetectionResults
 
 
 def _load_gt_objects(meta):
@@ -185,3 +186,20 @@ def show_detections(dets: Collection[dict], mpl=False, scale=1.0, *, v=0):
             plt.imshow(v_img)
         else:
             cv2_imshow(v_img[:, :, ::-1])
+
+
+def _parse_cli():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('detections_path')
+    return parser.parse_args()
+
+
+def _main():
+    args = _parse_cli()
+    dr = DetectionResults(args.detections_path)
+    show_detections(dr)
+
+
+if __name__ == '__main__':
+    _main()
