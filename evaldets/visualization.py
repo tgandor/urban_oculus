@@ -56,9 +56,7 @@ class DatasetIndex:
             k = itemgetter("image_id")
             self.image_objects = {
                 key: list(value)
-                for key, value in groupby(
-                    sorted(self.gt.values(), key=k), key=k
-                )
+                for key, value in groupby(sorted(self.gt.values(), key=k), key=k)
             }
         return self.image_objects
 
@@ -149,22 +147,22 @@ def show_image_objects(image_id, *, show_ids=True):
     cv2_imshow(v_img[:, :, ::-1])
 
 
-def show_detection(det: dict, *, crop=False, mode='cv2', scale=1.0, v=0):
+def show_detection(det: dict, *, crop=False, mode="cv2", scale=1.0, v=0):
     if crop is False:
         return show_detections([det], mode=mode, scale=scale, v=v)
 
-    v_img = show_detections([det], mode='ret', scale=scale, v=v)
+    v_img = show_detections([det], mode="ret", scale=scale, v=v)
 
-    if mode == 'mpl':
+    if mode == "mpl":
         plt.imshow(v_img)
-    elif mode == 'cv2':
+    elif mode == "cv2":
         cv2_imshow(v_img)
-    elif mode == 'ret':
+    elif mode == "ret":
         return v_img
 
 
-def show_detections(dets: Collection[dict], *, mode='cv2', scale=1.0, v=0):
-    k = itemgetter('image_id')
+def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
+    k = itemgetter("image_id")
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
         visualizer = visualizer_for_id(image_id, scale=scale)
 
@@ -189,31 +187,34 @@ def show_detections(dets: Collection[dict], *, mode='cv2', scale=1.0, v=0):
             if v:
                 print(f'img={det["image_id"]}: {label} {gt_label}')
 
-        draw_boxes(visualizer, gt_boxes, gt_labels)
+        if gt_boxes:
+            draw_boxes(visualizer, gt_boxes, gt_labels)
         v_img = draw_boxes(visualizer, boxes, labels)
 
-        if mode == 'mpl':
+        if mode == "mpl":
             plt.imshow(v_img)
-        elif mode == 'cv2':
+        elif mode == "cv2":
             cv2_imshow(v_img[:, :, ::-1])
-        elif mode == 'ret':
+        elif mode == "ret":
             return v_img
         else:
-            raise ValueError(f'Invalid mode for show_detections(): {mode}')
+            raise ValueError(f"Invalid mode for show_detections(): {mode}")
 
 
 def _parse_cli():
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('detections_path')
+    parser.add_argument("detections_path")
+    parser.add_argument("--verbose", "-v", action="store_true")
     return parser.parse_args()
 
 
 def _main():
     args = _parse_cli()
     dr = DetectionResults(args.detections_path)
-    show_detections(dr)
+    show_detections(dr, v=args.verbose)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()
