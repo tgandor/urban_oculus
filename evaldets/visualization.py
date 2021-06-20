@@ -149,11 +149,21 @@ def show_image_objects(image_id, *, show_ids=True):
     cv2_imshow(v_img[:, :, ::-1])
 
 
-def show_detection(det: dict, mpl=False, scale=1.0, *, v=0):
-    show_detections([det], mpl, scale, v=v)
+def show_detection(det: dict, *, crop=False, mode='cv2', scale=1.0, v=0):
+    if crop is False:
+        return show_detections([det], mode=mode, scale=scale, v=v)
+
+    v_img = show_detections([det], mode='ret', scale=scale, v=v)
+
+    if mode == 'mpl':
+        plt.imshow(v_img)
+    elif mode == 'cv2':
+        cv2_imshow(v_img)
+    elif mode == 'ret':
+        return v_img
 
 
-def show_detections(dets: Collection[dict], mpl=False, scale=1.0, *, v=0):
+def show_detections(dets: Collection[dict], *, mode='cv2', scale=1.0, v=0):
     k = itemgetter('image_id')
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
         visualizer = visualizer_for_id(image_id, scale=scale)
@@ -182,10 +192,14 @@ def show_detections(dets: Collection[dict], mpl=False, scale=1.0, *, v=0):
         draw_boxes(visualizer, gt_boxes, gt_labels)
         v_img = draw_boxes(visualizer, boxes, labels)
 
-        if mpl:
+        if mode == 'mpl':
             plt.imshow(v_img)
-        else:
+        elif mode == 'cv2':
             cv2_imshow(v_img[:, :, ::-1])
+        elif mode == 'ret':
+            return v_img
+        else:
+            raise ValueError(f'Invalid mode for show_detections(): {mode}')
 
 
 def _parse_cli():
