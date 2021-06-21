@@ -234,6 +234,12 @@ def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
             raise ValueError(f"Invalid mode for show_detections(): {mode}")
 
 
+def browse_image(image_id: int):
+    import webbrowser
+    url = f"https://cocodataset.org/#explore?id={image_id}"
+    webbrowser.open_new_tab(url)
+
+
 def _parse_cli():
     import argparse
 

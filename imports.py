@@ -43,9 +43,21 @@ MODEL_ZOO_CONFIGS = {
     "R101": "COCO-Detection/retinanet_R_101_FPN_3x.yaml",
 }
 
+CONFIGS_1x = {
+    "R50_C4": "COCO-Detection/faster_rcnn_R_50_C4_1x.yaml",
+    "R50_DC5": "COCO-Detection/faster_rcnn_R_50_DC5_1x.yaml",
+    "R50_FPN": "COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml",
+    "R50": "COCO-Detection/retinanet_R_50_FPN_1x.yaml",
+}
 
-def conf(model: str) -> CfgNode:
-    model_config = MODEL_ZOO_CONFIGS[model]
+
+def conf(model: str, configs=None) -> CfgNode:
+    import warnings
+    if configs is None:
+        configs = MODEL_ZOO_CONFIGS
+    model_config = configs[model]
     cfg = get_cfg()
-    cfg.merge_from_file(model_zoo.get_config_file(model_config))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore')
+        cfg.merge_from_file(model_zoo.get_config_file(model_config))
     return cfg
