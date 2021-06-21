@@ -156,10 +156,23 @@ def show_image_objects(image_id, *, show_ids=True):
 
 
 def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
-    x, y, w, h = map(int, itemgetter(*"xywh")(det))
+    x0, y0, w, h = itemgetter(*"xywh")(det)
+    x1, y1 = x0 + w, y0 + h
+
+    # crop around union (det, gt)
+    if "gt_id" in det:
+        gt = DSI.gt[det["gt_id"]]
+        gx, gy, gw, gh = gt["bbox"]
+        x0 = min(gx, x0)
+        y0 = min(gy, y0)
+        x1 = max(x1, gx + gw)
+        y1 = max(y1, gy + gh)
+
+    x0, y0, x1, y1 = map(int, (x0, y0, x1, y1))
+
     return v_img[
-        max(y - margin, 0) : y + h + margin,  # noqa
-        max(x - margin, 0) : x + w + margin,  # noqa
+        max(y0 - margin, 0) : y1 + margin,  # noqa
+        max(x0 - margin, 0) : x1 + margin,  # noqa
         ...,
     ]
 
@@ -174,7 +187,7 @@ def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", scale=1.
     if mode == "mpl":
         plt.imshow(v_img)
     elif mode == "cv2":
-        cv2_imshow(v_img, True)
+        return cv2_imshow(v_img, True)
     elif mode == "ret":
         return v_img
 
@@ -214,7 +227,7 @@ def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
         if mode == "mpl":
             plt.imshow(v_img)
         elif mode == "cv2":
-            cv2_imshow(v_img, True)
+            return cv2_imshow(v_img, True)
         elif mode == "ret":
             return v_img
         else:
