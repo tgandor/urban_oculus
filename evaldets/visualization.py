@@ -77,26 +77,34 @@ def visualizer_for_id(image_id, **kwargs):
     return visualizer
 
 
-def cv2_imshow(a):
+def cv2_imshow(a, rgb=False):
     """A replacement for cv2.imshow() for use in Jupyter notebooks.
     Args:
-      a : np.ndarray. shape (N, M) or (N, M, 1) is an NxM grayscale image.
-                      shape (N, M, 3) is an NxM BGR color image.
-                      shape (N, M, 4) is an NxM BGRA color image.
+        a: np.ndarray.
+            shape (N, M) or (N, M, 1) is an NxM grayscale image.
+            shape (N, M, 3) is an NxM BGR color image.
+            shape (N, M, 4) is an NxM BGRA color image.
+        rgb: bool.
+            `a` is (already) RGB instead of BGR.
+
+    Return value:
+        outside Jupyter: return the key pressed (see cv2.waitKey()).
+        otherwise: None
     """
     import cv2
 
     if not is_notebook():
+        if rgb:
+            a = cv2.cvtColor(a, cv2.COLOR_RGB2BGR)
         cv2.imshow("image", a)
-        cv2.waitKey(0)
-        return
+        return cv2.waitKey(0)
 
     from PIL import Image
     from IPython.display import display
 
     a = a.clip(0, 255).astype("uint8")
     # cv2 stores colors as BGR; convert to RGB
-    if a.ndim == 3:
+    if not rgb and a.ndim == 3:
         if a.shape[2] == 4:
             a = cv2.cvtColor(a, cv2.COLOR_BGRA2RGBA)
         else:
@@ -123,7 +131,7 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
     if mpl:
         plt.imshow(v_img)
     else:
-        cv2_imshow(v_img[:, :, ::-1])
+        cv2_imshow(v_img, True)
 
 
 def draw_boxes(visualizer, boxes, labels):
@@ -144,19 +152,29 @@ def show_image_objects(image_id, *, show_ids=True):
     else:
         labels = [obj["category"] for obj in DSI.gt_on_img[image_id]]
     v_img = draw_boxes(visualizer, boxes, labels)
-    cv2_imshow(v_img[:, :, ::-1])
+    cv2_imshow(v_img, True)
 
 
-def show_detection(det: dict, *, crop=False, mode="cv2", scale=1.0, v=0):
+def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
+    x, y, w, h = map(int, itemgetter(*"xywh")(det))
+    return v_img[
+        max(y - margin, 0) : y + h + margin,  # noqa
+        max(x - margin, 0) : x + w + margin,  # noqa
+        ...,
+    ]
+
+
+def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", scale=1.0, v=0):
     if crop is False:
         return show_detections([det], mode=mode, scale=scale, v=v)
 
     v_img = show_detections([det], mode="ret", scale=scale, v=v)
+    v_img = _crop_detection(v_img, det, crop_margin)
 
     if mode == "mpl":
         plt.imshow(v_img)
     elif mode == "cv2":
-        cv2_imshow(v_img)
+        cv2_imshow(v_img, True)
     elif mode == "ret":
         return v_img
 
@@ -177,6 +195,8 @@ def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
                 gt_label = f"GT#{gt['id']}" + (" (crowd)" if gt["iscrowd"] else "")
                 gt_boxes.append(gt["bbox"])
                 gt_labels.append(gt_label)
+            else:
+                gt_label = "(no GT)"
 
             bbox = [det[k] for k in "xywh"]
             iou_label = f'J={det.get("iou", 0)*100:.1f}' if "gt_id" in det else "(FP)"
@@ -194,7 +214,7 @@ def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
         if mode == "mpl":
             plt.imshow(v_img)
         elif mode == "cv2":
-            cv2_imshow(v_img[:, :, ::-1])
+            cv2_imshow(v_img, True)
         elif mode == "ret":
             return v_img
         else:
