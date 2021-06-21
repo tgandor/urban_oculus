@@ -75,6 +75,8 @@ class DetectionResults:
         self.iou_thresh = iou_thresh
         # process
         self.names = Names.for_dataset(self.dataset)
+        self._detections_by_image_id = None  # TODO: memoize
+        self._detections_by_class = None  # TODO: memoize
         self._evaluate()
         self._enrich_detections()
 
@@ -172,8 +174,13 @@ class DetectionResults:
         # sorted() is stable, so np.argsort(kind="mergesort") is no issue
         return sorted(self.detections, key=itemgetter("score"), reverse=True)
 
-    def detections_by_class(self, name: str):
+    def detections_by_class(self, name: str) -> list:
+        # TODO: dict, sorted by score
         return [d for d in self.detections_by_score if d["category"] == name]
+
+    def detections_by_image_id(self, image_id: int) -> list:
+        # TODO: dict
+        return [d for d in self.detections if d["image_id"] == image_id]
 
     def num_gt_class(self, name):
         cls_id = self.names.name_to_id(name)
