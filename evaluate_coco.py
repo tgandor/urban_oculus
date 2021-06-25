@@ -185,7 +185,7 @@ for df in args.detection_files:
     )
     print(
         "Bottom {args.top} classes (orig results):\n ",
-        ",\n  ".join(f"{v:4.1f} = {k}" for v, k in classes[-args.top :]),
+        ",\n  ".join(f"{v:4.1f} = {k}" for v, k in classes[-args.top :]),  # noqa
     )
 
     metrics.append(
