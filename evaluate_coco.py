@@ -103,8 +103,8 @@ for df in args.detection_files:
 
     tp = 0
     fp = 0
+    n_ign = 0
     n_gt = 0
-    an_gt = 0  # alternative (no ignore)
 
     nCats = len(coco.params.catIds)
     nArea = len(coco.params.areaRng)
@@ -119,32 +119,24 @@ for df in args.detection_files:
             if img is None:
                 continue
 
-            matched = (img["dtMatches"][IoU_T_IDX] > 0).sum()
-            num_matched_gts = len(set(img["dtMatches"][IoU_T_IDX])-{0.0})
-            tp += matched
-            if matched != num_matched_gts:
-                print(
-                    f"Img={coco.params.imgIds[ix]}, "
-                    f"Cat={coco.params.catIds[catIx]}, "
-                    f"matched={matched}, num_matched_gts={num_matched_gts}"
-                )
-                exit()
-
-            fp += (img["dtMatches"][IoU_T_IDX] == 0).sum()
+            ign = img["dtIgnore"][IoU_T_IDX]
+            mask = ~ign
+            n_ignored = ign.sum()
+            n_ign += n_ignored
+            tp += (img["dtMatches"][IoU_T_IDX][mask] > 0).sum()
+            fp += (img["dtMatches"][IoU_T_IDX][mask] == 0).sum()
             n_gt += len(img["gtIds"]) - img["gtIgnore"].astype(int).sum()
-            an_gt += len(img["gtIds"])
 
     recall = tp / n_gt
     precision = tp / (tp + fp)
-    assert tp + fp == len(
+
+    assert tp + fp + n_ign == len(
         detections
-    ), f"TP/{tp}/ + FP/{fp}/ == {tp+fp} != |D| /{len(detections)}/"
-    alt_recall = tp / an_gt
+    ), f"TP/{tp}/ + FP/{fp}/ +I/{n_ign}/ == {tp+fp} != |D| /{len(detections)}/"
     f1 = 2 * precision * recall / (precision + recall)
 
-    print(f"Total objects found in {det_filename}: {tp:,} (of {n_gt:,}/{an_gt:,})")
-    print(f"precision {precision*100:.1f} recall {recall*100:.1f}")
-    print(f"f1 score: {f1*100:.1f} alt_recall {alt_recall*100:.1f}")
+    print(f"Total objects found: {tp:,} (of {n_gt:,} GT, {n_ign:,} ignored, {fp:,} FP)")
+    print(f"precision {precision*100:.1f} recall {recall*100:.1f} f1 score: {f1*100:.1f}")
 
     model = results["model"].replace("_", r"\_")
     ap = results["results"]["bbox"]["AP"]

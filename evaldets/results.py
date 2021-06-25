@@ -141,7 +141,11 @@ class DetectionResults:
             d: dict
             del d["segmentation"]
             del d["id"]
+            if d["iscrowd"]:
+                # you should never see this:
+                print('Found crowd:', d)
             del d["iscrowd"]
+
             # d.setdefault("true_positive", False)
             if self.rounding:
                 d["score"] = round(d["score"], 5)
@@ -149,6 +153,7 @@ class DetectionResults:
                 d["area"] = round(d["area"], 1)
                 if "iou" in d:
                     d["iou"] = round(d["iou"], 3)
+
             # replace category_id with category name, as last key:
             d["category"] = self.names.get(d["category_id"])
             del d["category_id"]
