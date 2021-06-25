@@ -1,18 +1,18 @@
 import glob
-from operator import itemgetter
 import os
+from operator import itemgetter
 
-from detectron2.data import MetadataCatalog
 import numpy as np
+from detectron2.data import MetadataCatalog
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from uo.utils import load
 
 from .metrics import interpolated_PPV
 from .names import Names
-from uo.utils import load
 
 
-def _load_gt(dataset, del_mask=True, debug=None):
+def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
     path = MetadataCatalog.get(dataset).json_file
     if not os.path.exists(path):
         print(f"Missing annotations JSON: {path}")
@@ -29,7 +29,7 @@ def _load_gt(dataset, del_mask=True, debug=None):
     return result
 
 
-def _load_detections(file_or_dir):
+def load_detections(file_or_dir):
     file_or_dir = os.path.expanduser(file_or_dir)
 
     if os.path.isdir(file_or_dir):
@@ -59,7 +59,7 @@ class DetectionResults:
         det_file_or_dir,
         *,
         dataset="coco_2017_val",
-        rounding=True,
+        rounding=False,
         use_cats=True,
         area_rng=False,
         iou_thresh=0.5,
@@ -81,8 +81,8 @@ class DetectionResults:
         self._enrich_detections()
 
     def _evaluate(self):
-        self.detections, self.det_file = _load_detections(self.input)
-        self.gt = _load_gt(self.dataset, debug=self.debug)
+        self.detections, self.det_file = load_detections(self.input)
+        self.gt = load_gt(self.dataset, debug=self.debug)
         self.dt = self.gt.loadRes(self.detections)
 
         kwargs = {}

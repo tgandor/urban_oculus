@@ -13,7 +13,7 @@ def _main():
     parser.add_argument("detection_files", nargs="+")
     parser.add_argument("--output", "-o", default="detections.json", type=Path)
     parser.add_argument("--verbose", "-v", action="store_true")
-    parser.add_argument("--min-iou", type=float)
+    parser.add_argument("--min-iou", type=float, default=0.5)
     args = parser.parse_args()
 
     detections = []

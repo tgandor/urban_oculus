@@ -3,7 +3,7 @@ from itertools import count
 import json
 from pathlib import Path
 
-from evaldets.results import _load_gt
+from evaldets.results import load_gt
 
 parser = ArgumentParser()
 parser.add_argument("--bbox", action="store_true")
@@ -13,7 +13,7 @@ parser.add_argument("--output", "-o", type=Path, default="gt_objects.json")
 parser.add_argument("--indent", type=int, default=2)
 args = parser.parse_args()
 
-gt = _load_gt("coco_2017_val", debug=0)
+gt = load_gt("coco_2017_val", debug=0)
 
 result = []
 
