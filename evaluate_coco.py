@@ -1,6 +1,7 @@
 import argparse
 import glob
 import json
+from operator import itemgetter
 import os
 
 import numpy as np
@@ -230,6 +231,7 @@ for df in args.detection_files:
 # Summary ("bestAP" table)
 # Remember to define:
 # \newcommand\tsub[1]{\textsubscript{#1}}
+metrics.sort(key=itemgetter(0))
 print(
     r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
     r" & AP\tsub{s} & TPR & PPV & TP & FP \\"
