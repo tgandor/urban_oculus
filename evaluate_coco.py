@@ -14,7 +14,7 @@ IoU_T_IDX = 0  # first IoU threshold = 0.5
 MAXDET_IDX = -1  # last "maxDets"
 AREARNG_IDX = 0  # 'all'
 
-ANNOTATIONS = 'datasets/coco/annotations/instances_val2017.json'
+ANNOTATIONS = "datasets/coco/annotations/instances_val2017.json"
 # same as:
 # from detectron2.data import MetadataCatalog
 # ANNOTATIONS = MetadataCatalog.get('coco_2017_val').json_file
@@ -23,37 +23,42 @@ ANNOTATIONS = 'datasets/coco/annotations/instances_val2017.json'
 def parse_cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'detection_files', nargs='+',
-        help='path to coco_instances_results.json[.gz|.bz2|], or folder'
+        "detection_files",
+        nargs="+",
+        help="path to coco_instances_results.json[.gz|.bz2|], or folder",
     )
     parser.add_argument(
-        '--min-score', '-t', type=float,
-        help='confidence threshold for detections'
+        "--min-score", "-t", type=float, help="confidence threshold for detections"
     )
     parser.add_argument(
-        '--top', '-n', type=int, default=3,
-        help='how many best and worst classes to report'
+        "--top",
+        "-n",
+        type=int,
+        default=3,
+        help="how many best and worst classes to report",
     )
     parser.add_argument(
-        '--full', '-f', action='store_true',
-        help='perform full accumulate / summarize'
+        "--full", "-f", action="store_true", help="perform full accumulate / summarize"
     )
     return parser.parse_args()
 
 
 def load_gt():
     if not os.path.exists(ANNOTATIONS):
-        print('Please symlink datasets/ or unzip annotations_trainval2017.zip to datasets/coco/')
+        print(
+            "Please symlink datasets/ or unzip annotations_trainval2017.zip to datasets/coco/"
+        )
         exit()
 
-    return COCO(ANNOTATIONS)
+    return COCO(ANNOTATIONS, debug=0)
 
 
 def load_detections_results(file_or_dir):
     if os.path.isdir(file_or_dir):
         dump_dir = file_or_dir
-        det_filename = glob.glob(os.path.join(
-            dump_dir, "coco_instances_results.json*"))[0]
+        det_filename = glob.glob(
+            os.path.join(dump_dir, "coco_instances_results.json*")
+        )[0]
     else:
         dump_dir = os.path.dirname(file_or_dir)
         det_filename = file_or_dir
@@ -76,19 +81,19 @@ gt = load_gt()
 metrics = []
 
 for df in args.detection_files:
-    print(f'Processing {df}')
+    print(f"Processing {df}")
 
     detections, results, dump_dir, det_filename = load_detections_results(df)
 
     if args.min_score:
-        detections = [d for d in detections if d['score'] > args.min_score]
-        print(f'Filtered with T={args.min_score} to {len(detections)} dets.')
+        detections = [d for d in detections if d["score"] > args.min_score]
+        print(f"Filtered with T={args.min_score} to {len(detections)} dets.")
 
-    min_score = min(d['score'] for d in detections)
+    min_score = min(d["score"] for d in detections)
 
     dt = gt.loadRes(detections)
 
-    coco = COCOeval(gt, dt, iouType='bbox')
+    coco = COCOeval(gt, dt, iouType="bbox")
 
     if not args.full:
         # don't evalImage for 'small', 'medium', 'large'
@@ -107,42 +112,55 @@ for df in args.detection_files:
 
     assert len(coco.evalImgs) == nCats * nArea * nImgs
 
-    print(f'nArea: {nArea}, len(evalImgs): {len(coco.evalImgs)}')
+    print(f"nArea: {nArea}, len(evalImgs): {len(coco.evalImgs)}")
     for catIx in range(nCats):
         offs = catIx * (nArea * nImgs)
-        for img in coco.evalImgs[offs:offs+nImgs]:
+        for ix, img in enumerate(coco.evalImgs[offs : offs + nImgs]):  # noqa
             if img is None:
                 continue
 
-            tp += (img['dtMatches'][IoU_T_IDX] > 0).sum()
-            fp += (img['dtMatches'][IoU_T_IDX] == 0).sum()
-            n_gt += len(img['gtIds']) - img['gtIgnore'].astype(int).sum()
-            an_gt += len(img['gtIds'])
+            matched = (img["dtMatches"][IoU_T_IDX] > 0).sum()
+            num_matched_gts = len(set(img["dtMatches"][IoU_T_IDX])-{0.0})
+            tp += matched
+            if matched != num_matched_gts:
+                print(
+                    f"Img={coco.params.imgIds[ix]}, "
+                    f"Cat={coco.params.catIds[catIx]}, "
+                    f"matched={matched}, num_matched_gts={num_matched_gts}"
+                )
+                exit()
+
+            fp += (img["dtMatches"][IoU_T_IDX] == 0).sum()
+            n_gt += len(img["gtIds"]) - img["gtIgnore"].astype(int).sum()
+            an_gt += len(img["gtIds"])
 
     recall = tp / n_gt
     precision = tp / (tp + fp)
-    assert tp + fp == len(detections)
+    assert tp + fp == len(
+        detections
+    ), f"TP/{tp}/ + FP/{fp}/ == {tp+fp} != |D| /{len(detections)}/"
     alt_recall = tp / an_gt
     f1 = 2 * precision * recall / (precision + recall)
 
-    print(f'Total objects found in {det_filename}: {tp:,} (of {n_gt:,})')
-    print(f'precision {precision*100:.1f} recall {recall*100:.1f}')
-    print(f'f1 score: {f1*100:.1f} alt_recall {alt_recall*100:.1f}')
+    print(f"Total objects found in {det_filename}: {tp:,} (of {n_gt:,}/{an_gt:,})")
+    print(f"precision {precision*100:.1f} recall {recall*100:.1f}")
+    print(f"f1 score: {f1*100:.1f} alt_recall {alt_recall*100:.1f}")
 
-    model = results['model'].replace('_', r'\_')
-    ap = results['results']['bbox']['AP']
-    ap50 = results['results']['bbox']['AP50']
-    ap75 = results['results']['bbox']['AP75']
-    apl = results['results']['bbox']['APl']
-    apm = results['results']['bbox']['APm']
-    aps = results['results']['bbox']['APs']
+    model = results["model"].replace("_", r"\_")
+    ap = results["results"]["bbox"]["AP"]
+    ap50 = results["results"]["bbox"]["AP50"]
+    ap75 = results["results"]["bbox"]["AP75"]
+    apl = results["results"]["bbox"]["APl"]
+    apm = results["results"]["bbox"]["APm"]
+    aps = results["results"]["bbox"]["APs"]
 
     print(
-        results['model'],
+        results["model"],
         {
             k: np.round(v, 1)
-            for k, v in results['results']['bbox'].items() if '-' not in k
-        }
+            for k, v in results["results"]["bbox"].items()
+            if "-" not in k
+        },
     )
 
     if args.full:
@@ -150,87 +168,84 @@ for df in args.detection_files:
         coco.summarize()
         raw_rc = coco.eval["recall"][IoU_T_IDX, :, AREARNG_IDX, MAXDET_IDX]
         e_recall = np.mean(raw_rc[raw_rc > -1])
-        print(f'Recall by .eval: {e_recall}')
-        new_results = dict(zip(
-            results['results']['bbox'].keys(),
-            (100 * coco.stats[:6]).round(1)
-        ))
-        print('New results by coco.stats =', new_results)
+        print(f"Recall by .eval: {e_recall}")
+        new_results = dict(
+            zip(results["results"]["bbox"].keys(), (100 * coco.stats[:6]).round(1))
+        )
+        print("New results by coco.stats =", new_results)
         ap, ap50, ap75, aps, apm, apl = new_results.values()
 
     classes = sorted(
-        [(v, k) for k, v in results['results']['bbox'].items() if '-' in k],
-        reverse=True
+        [(v, k) for k, v in results["results"]["bbox"].items() if "-" in k],
+        reverse=True,
     )
     print(
-        f'Top {args.top} classes (orig results):\n ',
-        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[:args.top])
+        f"Top {args.top} classes (orig results):\n ",
+        ",\n  ".join(f"{v:4.1f} = {k}" for v, k in classes[: args.top]),
     )
     print(
-        'Bottom {args.top} classes (orig results):\n ',
-        ',\n  '.join(f'{v:4.1f} = {k}' for v, k in classes[-args.top:])
+        "Bottom {args.top} classes (orig results):\n ",
+        ",\n  ".join(f"{v:4.1f} = {k}" for v, k in classes[-args.top :]),
     )
 
-    metrics.append([
-        model,
-        ap,
-        ap50,
-        ap75,
-        apl,
-        apm,
-        aps,
-        100 * recall,
-        100 * precision,
-        tp,
-        fp,
-    ])
+    metrics.append(
+        [
+            model,
+            ap,
+            ap50,
+            ap75,
+            apl,
+            apm,
+            aps,
+            100 * recall,
+            100 * precision,
+            tp,
+            fp,
+        ]
+    )
 
-    with open('.evaluate_log.txt', 'a') as log:
+    with open(".evaluate_log.txt", "a") as log:
         print(
-            f'{model:10s}: TP {tp:,} (GT {n_gt:,}, FP {fp:,}), '
-            f'PPV {precision*100:.1f} TPR {recall*100:.1f} F1 {f1*100:.1f} - {det_filename}',
-            file=log
+            f"{model:10s}: TP {tp:,} (GT {n_gt:,}, FP {fp:,}), "
+            f"PPV {precision*100:.1f} TPR {recall*100:.1f} F1 {f1*100:.1f} - {det_filename}",
+            file=log,
         )
         if args.full:
-            print('New Results: ', new_results, file=log)
+            print("New Results: ", new_results, file=log)
 
     new_results_file = os.path.join(dump_dir, "rich_results.json")
-    bbox = {
-        k: v
-        for k, v in results['results']['bbox'].items()
-        if '-' not in k
-    }
+    bbox = {k: v for k, v in results["results"]["bbox"].items() if "-" not in k}
     rich_results = {
-        'quality': results['quality'],
-        'model': results['model'],
-        'elapsed': results['elapsed'],
+        "quality": results["quality"],
+        "model": results["model"],
+        "elapsed": results["elapsed"],
         # TypeError: Object of type int64 is not JSON serializable...
-        'tp': int(tp),
-        'fp': int(fp),
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-        'min_score': min_score,
-        'score_T': args.min_score,
-        **bbox
+        "tp": int(tp),
+        "fp": int(fp),
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "min_score": min_score,
+        "score_T": args.min_score,
+        **bbox,
     }
     # import code; code.interact(local=locals())
-    with open(new_results_file, 'w') as jsf:
+    with open(new_results_file, "w") as jsf:
         json.dump(rich_results, jsf)
 
-    print('-' * 79)
+    print("-" * 79)
 
 # Summary ("bestAP" table)
 # Remember to define:
 # \newcommand\tsub[1]{\textsubscript{#1}}
 print(
-    r'Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}'
-    r' & AP\tsub{s} & TPR & PPV & TP & FP \\'
+    r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
+    r" & AP\tsub{s} & TPR & PPV & TP & FP \\"
 )
-print(r'\midrule')
+print(r"\midrule")
 for row in metrics:
     model, ap, ap50, ap75, apl, apm, aps, tpr, ppv, tp, fp = row
     print(
-        f'{model} & {ap:.1f} & {ap50:.1f} & {ap75:.1f} & {apl:.1f} & {apm:.1f}'
-        f' & {aps:.1f} & {tpr:.1f} & {ppv:.1f} & {tp:,} & {fp:,} \\\\'
+        f"{model} & {ap:.1f} & {ap50:.1f} & {ap75:.1f} & {apl:.1f} & {apm:.1f}"
+        f" & {aps:.1f} & {tpr:.1f} & {ppv:.1f} & {tp:,} & {fp:,} \\\\"
     )

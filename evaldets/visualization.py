@@ -144,8 +144,8 @@ def draw_box(visualizer, box, label):
     return draw_boxes(visualizer, [box], [label])
 
 
-def show_image_objects(image_id, *, show_ids=True):
-    visualizer = visualizer_for_id(image_id)
+def show_image_objects(image_id, *, show_ids=True, scale=1.0, v=0):
+    visualizer = visualizer_for_id(image_id, scale=scale)
     boxes = [obj["bbox"] for obj in DSI.gt_on_img[image_id]]
     if show_ids:
         labels = [f'{obj["category"]} #{obj["id"]}' for obj in DSI.gt_on_img[image_id]]
@@ -153,6 +153,9 @@ def show_image_objects(image_id, *, show_ids=True):
         labels = [obj["category"] for obj in DSI.gt_on_img[image_id]]
     v_img = draw_boxes(visualizer, boxes, labels)
     cv2_imshow(v_img, True)
+    if v:
+        for ix, gt in enumerate(DSI.gt_on_img[image_id]):
+            print(ix+1, gt)
 
 
 def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
@@ -243,7 +246,7 @@ def browse_image(image_id: int):
 def _parse_cli():
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("view_detections")
     parser.add_argument("detections_path")
     parser.add_argument("--verbose", "-v", action="store_true")
     return parser.parse_args()
@@ -253,6 +256,16 @@ def _main():
     args = _parse_cli()
     dr = DetectionResults(args.detections_path)
     show_detections(dr, v=args.verbose)
+
+
+def _show_gt():
+    import argparse
+    parser = argparse.ArgumentParser("show_gt")
+    parser.add_argument("image_id", type=int)
+    parser.add_argument("--scale", "-s", type=float, default=1.0)
+    parser.add_argument("--verbose", "-v", action="store_true")
+    args = parser.parse_args()
+    show_image_objects(args.image_id, scale=args.scale, v=args.verbose)
 
 
 if __name__ == "__main__":
