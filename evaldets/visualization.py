@@ -233,7 +233,9 @@ def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
         if mode == "mpl":
             plt.imshow(v_img)
         elif mode == "cv2":
-            return cv2_imshow(v_img, True)
+            key = cv2_imshow(v_img, True)
+            if key == ord('q'):
+                return
         elif mode == "ret":
             return v_img
         else:
@@ -252,14 +254,22 @@ def _parse_cli():
 
     parser = argparse.ArgumentParser("view_detections")
     parser.add_argument("detections_path")
+    parser.add_argument("--scale", "-s", type=float, default=1.0)
     parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--category", "-c")
+    parser.add_argument("--image-id", "-i", type=int)
     return parser.parse_args()
 
 
 def _main():
     args = _parse_cli()
     dr = DetectionResults(args.detections_path)
-    show_detections(dr, v=args.verbose)
+    if args.image_id:
+        show_detections(dr.detections_by_image_id(args.image_id), v=args.verbose, scale=args.scale)
+    elif args.category:
+        show_detections(dr.detections_by_class(args.category), v=args.verbose, scale=args.scale)
+    else:
+        show_detections(dr, v=args.verbose, scale=args.scale)
 
 
 def _show_gt():
