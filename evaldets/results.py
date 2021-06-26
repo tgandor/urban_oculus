@@ -1,6 +1,7 @@
 import glob
 import os
 from operator import itemgetter
+import pickle
 
 import numpy as np
 from detectron2.data import MetadataCatalog
@@ -29,7 +30,7 @@ def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
     return result
 
 
-def load_detections(file_or_dir):
+def load_detections(file_or_dir, cache=True):
     file_or_dir = os.path.expanduser(file_or_dir)
 
     if os.path.isdir(file_or_dir):
@@ -40,6 +41,13 @@ def load_detections(file_or_dir):
     else:
         dump_dir = os.path.dirname(file_or_dir)
         det_filename = file_or_dir
+
+    cache_file = os.path.join(dump_dir, "detections.pkl")
+    if cache and os.path.exists(cache_file):
+        with open(cache_file, 'rb') as pkl:
+            detections = pickle.load(pkl)
+        print('Loaded cached detections:', cache_file)
+        return detections, cache_file
 
     detections = load(det_filename)
 
@@ -64,11 +72,14 @@ class DetectionResults:
         area_rng=False,
         iou_thresh=0.5,
         debug=0,
+        cache=True,
     ):
         self.dataset = dataset
         self.input = det_file_or_dir
         self.rounding = rounding
         self.debug = debug
+        self.cache = cache
+        self.cache_loaded = False
         # COCOeval params
         self.use_cats = use_cats
         self.area_rng = area_rng
@@ -79,10 +90,19 @@ class DetectionResults:
         self._detections_by_class = None  # TODO: memoize
         self._evaluate()
         self._enrich_detections()
+        if cache and not self.cache_loaded:
+            self._save_cache()
 
     def _evaluate(self):
-        self.detections, self.det_file = load_detections(self.input)
+        self.detections, self.det_file = load_detections(self.input, self.cache)
         self.gt = load_gt(self.dataset, debug=self.debug)
+
+        if self.det_file.endswith('.pkl'):
+            self.dt = None
+            self.coco = None
+            self.cache_loaded = True
+            return
+
         self.dt = self.gt.loadRes(self.detections)
 
         kwargs = {}
@@ -137,6 +157,9 @@ class DetectionResults:
                     # detection["gt_bbox"] = annotation["bbox"]
 
     def _enrich_detections(self):
+        if self.cache_loaded:
+            return
+
         for d in self.detections:
             d: dict
             del d["segmentation"]
@@ -160,6 +183,12 @@ class DetectionResults:
             del d["area"]  # purely derivative from w*h (mod rounding)
             d["x"], d["y"], d["w"], d["h"] = d["bbox"]
             del d["bbox"]
+
+    def _save_cache(self):
+        cache_file = os.path.join(os.path.dirname(self.det_file), "detections.pkl")
+        with open(cache_file, 'wb') as pkl:
+            print('Saving detections to cache:', cache_file)
+            pickle.dump(self.detections, pkl)
 
     def __iter__(self):
         return iter(self.detections)
