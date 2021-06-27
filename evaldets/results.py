@@ -108,6 +108,7 @@ class DetectionResults:
         }
 
         self._evaluate()
+        self._match_detections()
         self._enrich_detections()
         if cache and not self.cache_loaded:
             self._save_cache()
@@ -143,36 +144,40 @@ class DetectionResults:
 
         self.coco.evaluate()
 
+    def _match_detections(self):
+        if self.cache_loaded:
+            return
+
+        def _match_by_gt(imgIx, img):
+            imgId = self.coco.params.imgIds[imgIx]
+            ious = self.coco.ious[imgId, catId]
+            dt_id2dind = {dt_id: dind for dind, dt_id in enumerate(img["dtIds"])}
+            for gind, fdt_id in enumerate(img["gtMatches"][0]):
+                dt_id = int(fdt_id)
+                if not dt_id:
+                    continue
+                detection = self.detections[dt_id - 1]
+                dind = dt_id2dind[dt_id]  # per-image detection idx
+                gt_id = img["gtIds"][gind]
+                detection["iou"] = ious[dind, gind]
+                detection["gt_id"] = gt_id
+
+        def _match_by_dt(img):
+            ...
+
         nCats = len(self.coco.params.catIds) if self.use_cats else 1
         nArea = len(self.coco.params.areaRng)
         nImgs = len(self.coco.params.imgIds)
 
-        # print("nCats:", nCats, len(self.coco.evalImgs), nCats * nArea * nImgs)
         assert len(self.coco.evalImgs) == nCats * nArea * nImgs
 
         for catIx in range(nCats):
             catId = self.coco.params.catIds[catIx] if self.use_cats else -1
             offs = catIx * (nArea * nImgs)
-            for imgIx, img in enumerate(
-                self.coco.evalImgs[offs : offs + nImgs]  # noqa
-            ):
+            for imgIx, img in enumerate(self.coco.evalImgs[offs : offs + nImgs]):  # noqa
                 if img is None:
                     continue
-                imgId = self.coco.params.imgIds[imgIx]
-                ious = self.coco.ious[imgId, catId]
-                dt_id2dind = {dt_id: dind for dind, dt_id in enumerate(img["dtIds"])}
-                for gind, fdt_id in enumerate(img["gtMatches"][0]):
-                    dt_id = int(fdt_id)
-                    if not dt_id:
-                        continue
-                    detection = self.detections[dt_id - 1]
-                    dind = dt_id2dind[dt_id]  # per-image detection idx
-                    gt_id = img["gtIds"][gind]
-                    # detection["true_positive"] = True
-                    detection["iou"] = ious[dind, gind]
-                    detection["gt_id"] = gt_id
-                    # annotation = self.gt.anns[gt_id]
-                    # detection["gt_bbox"] = annotation["bbox"]
+                _match_by_gt(imgIx, img)
 
     def _enrich_detections(self):
         if self.cache_loaded:
