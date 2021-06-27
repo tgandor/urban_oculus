@@ -99,6 +99,14 @@ class DetectionResults:
         self.names = Names.for_dataset(self.dataset)
         self._detections_by_image_id = None  # TODO: memoize
         self._detections_by_class = None
+        self.gt = load_gt(self.dataset, debug=self.debug)
+
+        k = itemgetter("category_id")
+        self._num_gt_class = {
+            self.names.get(cid): sum(g["iscrowd"] == 0 for g in values)
+            for cid, values in groupby(sorted(self.gt.anns.values(), key=k), key=k)
+        }
+
         self._evaluate()
         self._enrich_detections()
         if cache and not self.cache_loaded:
@@ -106,7 +114,6 @@ class DetectionResults:
 
     def _evaluate(self):
         self.detections, self.det_file = load_detections(self.input, self.cache)
-        self.gt = load_gt(self.dataset, debug=self.debug)
 
         if self.det_file.endswith(".pkl"):
             self.dt = None
@@ -248,12 +255,7 @@ class DetectionResults:
         return [d for d in self.detections if d["image_id"] == image_id]
 
     def num_gt_class(self, name):
-        cls_id = self.names.name_to_id(name)
-        return sum(
-            g["iscrowd"] == 0
-            for g in self.gt.anns.values()
-            if g["category_id"] == cls_id
-        )
+        return self._num_gt_class[name]
 
     def _num_gt_class(self, name):
         """This version only works for non-cached results."""
