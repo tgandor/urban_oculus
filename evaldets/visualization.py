@@ -167,7 +167,6 @@ def show_image_objects(image_id, *, show_ids=True, category=None, scale=1.0, v=0
     cv2_imshow(v_img, True)
 
 
-
 def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
     x0, y0, w, h = itemgetter(*"xywh")(det)
     x1, y1 = x0 + w, y0 + h

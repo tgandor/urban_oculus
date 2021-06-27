@@ -2,6 +2,7 @@ import glob
 import os
 from operator import itemgetter
 import pickle
+import time
 
 import numpy as np
 from detectron2.data import MetadataCatalog
@@ -20,7 +21,7 @@ def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
         exit()
     kwargs = {}
     if debug is not None:
-        kwargs['debug'] = debug
+        kwargs["debug"] = debug
     result = COCO(path, **kwargs)
 
     if del_mask:
@@ -44,9 +45,9 @@ def load_detections(file_or_dir, cache=True):
 
     cache_file = os.path.join(dump_dir, "detections.pkl")
     if cache and os.path.exists(cache_file):
-        with open(cache_file, 'rb') as pkl:
+        with open(cache_file, "rb") as pkl:
             detections = pickle.load(pkl)
-        print('Loaded cached detections:', cache_file)
+        print("Loaded cached detections:", cache_file)
         return detections, cache_file
 
     detections = load(det_filename)
@@ -61,6 +62,11 @@ class DetectionResults:
             This only works with my fork:
             https://github.com/tgandor/cocoapi/tree/reformatted
     """
+
+    # recThrs = self.coco.params.recThrs
+    RECALL_THRS = np.linspace(
+        0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True
+    )
 
     def __init__(
         self,
@@ -97,7 +103,7 @@ class DetectionResults:
         self.detections, self.det_file = load_detections(self.input, self.cache)
         self.gt = load_gt(self.dataset, debug=self.debug)
 
-        if self.det_file.endswith('.pkl'):
+        if self.det_file.endswith(".pkl"):
             self.dt = None
             self.coco = None
             self.cache_loaded = True
@@ -107,7 +113,7 @@ class DetectionResults:
 
         kwargs = {}
         if self.debug is not None:
-            kwargs['debug'] = self.debug
+            kwargs["debug"] = self.debug
         self.coco = COCOeval(self.gt, self.dt, iouType="bbox", **kwargs)
 
         # don't evalImage for 'small', 'medium', 'large'
@@ -166,7 +172,7 @@ class DetectionResults:
             del d["id"]
             if d["iscrowd"]:
                 # you should never see this:
-                print('Found crowd:', d)
+                print("Found crowd:", d)
             del d["iscrowd"]
 
             # d.setdefault("true_positive", False)
@@ -186,8 +192,8 @@ class DetectionResults:
 
     def _save_cache(self):
         cache_file = os.path.join(os.path.dirname(self.det_file), "detections.pkl")
-        with open(cache_file, 'wb') as pkl:
-            print('Saving detections to cache:', cache_file)
+        with open(cache_file, "wb") as pkl:
+            print("Saving detections to cache:", cache_file)
             pickle.dump(self.detections, pkl)
 
     def __iter__(self):
@@ -219,6 +225,15 @@ class DetectionResults:
     def num_gt_class(self, name):
         cls_id = self.names.name_to_id(name)
         return sum(
+            g["iscrowd"] == 0
+            for g in self.gt.anns.values()
+            if g["category_id"] == cls_id
+        )
+
+    def _num_gt_class(self, name):
+        """This version only works for non-cached results."""
+        cls_id = self.names.name_to_id(name)
+        return sum(
             g["ignore"] == 0
             for (_, cat_id), v in self.coco._gts.items()
             for g in v
@@ -227,15 +242,14 @@ class DetectionResults:
 
     def average_precision(self, category: str, t_iou: float = 0.5):
         dets = self.detections_by_class(category)
-        TP = np.cumsum([det.get('iou', 0) >= t_iou for det in dets])
-        FP = np.cumsum([det.get('iou', 0) < t_iou for det in dets])
+        TP = np.cumsum([det.get("iou", 0) >= t_iou for det in dets])
+        FP = np.cumsum([det.get("iou", 0) < t_iou for det in dets])
         nGT = self.num_gt_class(category)
         TPR = TP / nGT
         PPV = TP / (TP + FP)
         PPVi = interpolated_PPV(PPV)
-        recThrs = self.coco.params.recThrs
-        inds = np.searchsorted(TPR, recThrs, side="left")
-        q = np.zeros_like(recThrs)
+        inds = np.searchsorted(TPR, self.RECALL_THRS, side="left")
+        q = np.zeros_like(self.RECALL_THRS)
         for ri, pi in enumerate(inds):
             if pi >= len(PPVi):
                 break
@@ -245,3 +259,31 @@ class DetectionResults:
     def mean_average_precision(self, t_iou: float = 0.5):
         """mAP metric."""
         return np.mean([self.average_precision(c, t_iou) for c in self.names.all])
+
+
+def _main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("detection_files", nargs="+")
+    parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--no-cache", "-C", action="store_true")
+    parser.add_argument("--min-iou", type=float, default=0.5)
+    args = parser.parse_args()
+
+    for detection_file in args.detection_files:
+        res = DetectionResults(
+            detection_file,
+            debug=1 if args.verbose else 0,
+            iou_thresh=args.min_iou,
+            cache=not args.no_cache,
+        )
+        print("mAP@.5:", res.mean_average_precision())
+
+
+if __name__ == "__main__":
+    start = time.time()
+    try:
+        _main()
+    finally:
+        print(f"Done: {time.time()-start:.3f} s")
