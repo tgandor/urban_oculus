@@ -144,21 +144,28 @@ def draw_box(visualizer, box, label):
     return draw_boxes(visualizer, [box], [label])
 
 
-def show_image_objects(image_id, *, show_ids=True, scale=1.0, v=0):
+def show_image_objects(image_id, *, show_ids=True, category=None, scale=1.0, v=0):
     visualizer = visualizer_for_id(image_id, scale=scale)
-    boxes = [obj["bbox"] for obj in DSI.gt_on_img[image_id]]
+    objects = DSI.gt_on_img[image_id]
+    if category:
+        objects = [obj for obj in objects if obj["category"] == category]
+
+    if v:
+        for ix, gt in enumerate(objects):
+            print(ix + 1, gt)
+
+    boxes = [obj["bbox"] for obj in objects]
     if show_ids:
         labels = [
             f'{obj["category"]} #{obj["id"]} {"(crowd)" if obj["iscrowd"] else ""}'
-            for obj in DSI.gt_on_img[image_id]
+            for obj in objects
         ]
     else:
-        labels = [obj["category"] for obj in DSI.gt_on_img[image_id]]
+        labels = [obj["category"] for obj in objects]
+
     v_img = draw_boxes(visualizer, boxes, labels)
     cv2_imshow(v_img, True)
-    if v:
-        for ix, gt in enumerate(DSI.gt_on_img[image_id]):
-            print(ix + 1, gt)
+
 
 
 def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
@@ -201,6 +208,8 @@ def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", scale=1.
 def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
     k = itemgetter("image_id")
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
+        print("image_id =", image_id)
+
         visualizer = visualizer_for_id(image_id, scale=scale)
 
         gt_boxes = []
@@ -234,7 +243,7 @@ def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
             plt.imshow(v_img)
         elif mode == "cv2":
             key = cv2_imshow(v_img, True)
-            if key == ord('q'):
+            if key == ord("q"):
                 return
         elif mode == "ret":
             return v_img
@@ -249,7 +258,7 @@ def browse_image(image_id: int):
     webbrowser.open_new_tab(url)
 
 
-def _parse_cli():
+def _main():
     import argparse
 
     parser = argparse.ArgumentParser("view_detections")
@@ -258,16 +267,18 @@ def _parse_cli():
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--category", "-c")
     parser.add_argument("--image-id", "-i", type=int)
-    return parser.parse_args()
+    args = parser.parse_args()
 
-
-def _main():
-    args = _parse_cli()
     dr = DetectionResults(args.detections_path)
     if args.image_id:
-        show_detections(dr.detections_by_image_id(args.image_id), v=args.verbose, scale=args.scale)
+        detections = dr.detections_by_image_id(args.image_id)
+        if args.category:
+            detections = [d for d in detections if d["category"] == args.category]
+        show_detections(detections, v=args.verbose, scale=args.scale)
     elif args.category:
-        show_detections(dr.detections_by_class(args.category), v=args.verbose, scale=args.scale)
+        show_detections(
+            dr.detections_by_class(args.category), v=args.verbose, scale=args.scale
+        )
     else:
         show_detections(dr, v=args.verbose, scale=args.scale)
 
@@ -277,6 +288,7 @@ def _show_gt():
 
     parser = argparse.ArgumentParser("show_gt")
     parser.add_argument("image_id", type=int)
+    parser.add_argument("--category", "-c")
     parser.add_argument("--scale", "-s", type=float, default=1.0)
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--www", "-w", action="store_true")
@@ -284,7 +296,9 @@ def _show_gt():
     if args.www:
         browse_image(args.image_id)
     else:
-        show_image_objects(args.image_id, scale=args.scale, v=args.verbose)
+        show_image_objects(
+            args.image_id, category=args.category, scale=args.scale, v=args.verbose
+        )
 
 
 if __name__ == "__main__":
