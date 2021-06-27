@@ -1,4 +1,5 @@
 import glob
+from itertools import groupby
 import os
 from operator import itemgetter
 import pickle
@@ -67,6 +68,10 @@ class DetectionResults:
     RECALL_THRS = np.linspace(
         0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True
     )
+    # coco.params.iouThrs
+    IOU_THRS = np.linspace(
+        0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True
+    )
 
     def __init__(
         self,
@@ -93,7 +98,7 @@ class DetectionResults:
         # process
         self.names = Names.for_dataset(self.dataset)
         self._detections_by_image_id = None  # TODO: memoize
-        self._detections_by_class = None  # TODO: memoize
+        self._detections_by_class = None
         self._evaluate()
         self._enrich_detections()
         if cache and not self.cache_loaded:
@@ -190,6 +195,14 @@ class DetectionResults:
             d["x"], d["y"], d["w"], d["h"] = d["bbox"]
             del d["bbox"]
 
+    def finish_cocoeval(self):
+        if self.coco is None:
+            print("Cached results has no COCOEval to finish.")
+            return
+
+        self.coco.accumulate()
+        self.coco.summarize()
+
     def _save_cache(self):
         cache_file = os.path.join(os.path.dirname(self.det_file), "detections.pkl")
         with open(cache_file, "wb") as pkl:
@@ -215,8 +228,20 @@ class DetectionResults:
         return sorted(self.detections, key=itemgetter("score"), reverse=True)
 
     def detections_by_class(self, name: str) -> list:
-        # TODO: dict, sorted by score
-        return [d for d in self.detections_by_score if d["category"] == name]
+        if self._detections_by_class is None:
+            self._detections_by_class = {
+                category: list(detections)
+                for category, detections in groupby(
+                    sorted(
+                        self.detections,
+                        key=itemgetter("category", "score"),
+                        reverse=True,
+                    ),
+                    key=itemgetter("category"),
+                )
+            }
+
+        return self._detections_by_class[name]
 
     def detections_by_image_id(self, image_id: int) -> list:
         # TODO: dict
