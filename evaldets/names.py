@@ -24,6 +24,9 @@ class Names:
         """Return all class names."""
         return self.meta.thing_classes
 
+    def __iter__(self):
+        return iter(self.meta.thing_classes)
+
     @classmethod
     def for_dataset(cls, dataset):
         return cls(MetadataCatalog.get(dataset))

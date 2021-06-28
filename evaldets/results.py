@@ -15,6 +15,22 @@ from .metrics import interpolated_PPV
 from .names import Names
 
 
+CROWD_ID_T = 10 ** 9
+"""
+In [8]: '{:,}'.format(max(a['id'] for a in dr.gt.dataset['annotations']))
+Out[8]: '908,800,474,293'
+
+In [9]: '{:,}'.format(min(a['id'] for a in dr.gt.dataset['annotations'] if a['id'] > 1e9))
+Out[9]: '900,100,002,299'
+
+In [10]: '{:,}'.format(max(a['id'] for a in dr.gt.dataset['annotations'] if a['id'] < 1e9))
+Out[10]: '2,232,119'
+
+In [11]: '{:,}'.format(min(a['id'] for a in dr.gt.dataset['annotations']))
+Out[11]: '283'
+"""
+
+
 def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
     path = MetadataCatalog.get(dataset).json_file
     if not os.path.exists(path):
@@ -101,6 +117,7 @@ class DetectionResults:
         self.names = Names.for_dataset(self.dataset)
         self._detections_by_image_id = None  # TODO: memoize
         self._detections_by_class = None
+        self._all_detections_by_class = None
         self.gt = load_gt(self.dataset, debug=self.debug)
 
         k = itemgetter("category_id")
@@ -151,8 +168,8 @@ class DetectionResults:
             return
 
         def _match_by_gt(img):
-            image_id = img['image_id']
-            category_id = img['category_id'] if self.use_cats else -1
+            image_id = img["image_id"]
+            category_id = img["category_id"] if self.use_cats else -1
             ious = self.coco.ious[image_id, category_id]
             dt_id2dind = {dt_id: dind for dind, dt_id in enumerate(img["dtIds"])}
             for gind, fdt_id in enumerate(img["gtMatches"][0]):
@@ -165,8 +182,8 @@ class DetectionResults:
                 detection["gt_id"] = img["gtIds"][gind]
 
         def _match_by_dt(img):
-            image_id = img['image_id']
-            category_id = img['category_id'] if self.use_cats else -1
+            image_id = img["image_id"]
+            category_id = img["category_id"] if self.use_cats else -1
             ious = self.coco.ious[image_id, category_id]
             gt_id2gind = {gt_id: gind for gind, gt_id in enumerate(img["gtIds"])}
             for dind, fgt_id in enumerate(img["dtMatches"][0]):
@@ -252,9 +269,9 @@ class DetectionResults:
         # sorted() is stable, so np.argsort(kind="mergesort") is no issue
         return sorted(self.detections, key=itemgetter("score"), reverse=True)
 
-    def detections_by_class(self, name: str) -> list:
-        if self._detections_by_class is None:
-            self._detections_by_class = {
+    def all_detections_by_class(self, name: str) -> list:
+        if self._all_detections_by_class is None:
+            self._all_detections_by_class = {
                 category: list(detections)
                 for category, detections in groupby(
                     sorted(
@@ -266,6 +283,19 @@ class DetectionResults:
                 )
             }
 
+        return self._all_detections_by_class[name]
+
+    def detections_by_class(self, name: str) -> list:
+        if self._detections_by_class is None:
+            self._detections_by_class = {
+                cat: [
+                    d
+                    for d in self.all_detections_by_class(cat)
+                    if d.get("gt_id", 0) < CROWD_ID_T
+                ]
+                for cat in self.names
+            }
+
         return self._detections_by_class[name]
 
     def detections_by_image_id(self, image_id: int) -> list:
@@ -274,16 +304,6 @@ class DetectionResults:
 
     def num_gt_class(self, name):
         return self._num_gt_class[name]
-
-    def _num_gt_class(self, name):
-        """This version only works for non-cached results."""
-        cls_id = self.names.name_to_id(name)
-        return sum(
-            g["ignore"] == 0
-            for (_, cat_id), v in self.coco._gts.items()
-            for g in v
-            if cat_id == cls_id
-        )
 
     def average_precision(self, category: str, t_iou: float = 0.5):
         dets = self.detections_by_class(category)
@@ -303,7 +323,7 @@ class DetectionResults:
 
     def mean_average_precision(self, t_iou: float = 0.5):
         """mAP metric."""
-        return np.mean([self.average_precision(c, t_iou) for c in self.names.all])
+        return np.mean([self.average_precision(c, t_iou) for c in self.names])
 
 
 def _main():
@@ -311,6 +331,7 @@ def _main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("detection_files", nargs="+")
+    parser.add_argument("--cocoeval", "-c", action="store_true")
     parser.add_argument("--gt-match", "-g", action="store_true")
     parser.add_argument("--min-iou", type=float, default=0.5)
     parser.add_argument("--no-cache", "-C", action="store_true")
@@ -320,12 +341,16 @@ def _main():
     for detection_file in args.detection_files:
         res = DetectionResults(
             detection_file,
+            area_rng=None if args.cocoeval else False,
             cache=not args.no_cache,
             debug=int(args.verbose),
             gt_match=args.gt_match,
-            iou_thresh=args.min_iou,
+            iou_thresh=None if args.cocoeval else args.min_iou,
         )
         print("mAP@.5:", res.mean_average_precision())
+        print("mAP@.75:", res.mean_average_precision(0.75))
+        if args.cocoeval:
+            res.finish_cocoeval()
 
 
 if __name__ == "__main__":
