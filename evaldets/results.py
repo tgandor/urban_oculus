@@ -97,7 +97,7 @@ class DetectionResults:
         cache=True,
         dataset="coco_2017_val",
         debug=0,
-        gt_match=True,
+        gt_match=False,
         iou_thresh=0.5,
         rounding=False,
         use_cats=True,
@@ -305,7 +305,8 @@ class DetectionResults:
     def num_gt_class(self, name):
         return self._num_gt_class[name]
 
-    def average_precision(self, category: str, t_iou: float = 0.5):
+    def pr_curve(self, category: str, t_iou: float = 0.5):
+        """Return the precision-recall curve sampled at RECALL_THRS"""
         dets = self.detections_by_class(category)
         TP = np.cumsum([det.get("iou", 0) >= t_iou for det in dets])
         FP = np.cumsum([det.get("iou", 0) < t_iou for det in dets])
@@ -319,6 +320,27 @@ class DetectionResults:
             if pi >= len(PPVi):
                 break
             q[ri] = PPVi[pi]
+        return q
+
+    def pr_curve2(self, category: str, t_iou: float = 0.5):
+        """Wrong: longer... Return the precision-recall curve sampled at RECALL_THRS"""
+        dets = self.all_detections_by_class(category)
+        TP = np.cumsum([(det.get("iou", 0) >= t_iou and det.get('gt_id', 0) < CROWD_ID_T) for det in dets]).astype(float)
+        FP = np.cumsum([(det.get("iou", 0) < t_iou and det.get('gt_id', 0) < CROWD_ID_T) for det in dets]).astype(float)
+        nGT = self.num_gt_class(category)
+        TPR = TP / nGT
+        PPV = TP / (TP + FP + np.spacing(1))
+        PPVi = interpolated_PPV(PPV)
+        inds = np.searchsorted(TPR, self.RECALL_THRS, side="left")
+        q = np.zeros_like(self.RECALL_THRS)
+        for ri, pi in enumerate(inds):
+            if pi >= len(PPVi):
+                break
+            q[ri] = PPVi[pi]
+        return q
+
+    def average_precision(self, category: str, t_iou: float = 0.5):
+        q = self.pr_curve(category, t_iou)
         return np.mean(q)
 
     def mean_average_precision(self, t_iou: float = 0.5):
