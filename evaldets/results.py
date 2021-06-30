@@ -305,6 +305,22 @@ class DetectionResults:
     def num_gt_class(self, name):
         return self._num_gt_class[name]
 
+    def _tp_sum(self, category: str, t_iou: float):
+        return np.cumsum(
+            [
+                (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) < CROWD_ID_T)
+                for det in self.all_detections_by_class(category)
+            ]
+        ).astype(float)
+
+    def _fp_sum(self, category: str, t_iou: float):
+        return np.cumsum(
+            [
+                (det.get("iou", 0) < t_iou and det.get("gt_id", 0) < CROWD_ID_T)
+                for det in self.all_detections_by_class(category)
+            ]
+        ).astype(float)
+
     def pr_curve(self, category: str, t_iou: float = 0.5):
         """Return the precision-recall curve sampled at RECALL_THRS"""
         dets = self.detections_by_class(category)
@@ -324,9 +340,8 @@ class DetectionResults:
 
     def pr_curve2(self, category: str, t_iou: float = 0.5):
         """Wrong: longer... Return the precision-recall curve sampled at RECALL_THRS"""
-        dets = self.all_detections_by_class(category)
-        TP = np.cumsum([(det.get("iou", 0) >= t_iou and det.get('gt_id', 0) < CROWD_ID_T) for det in dets]).astype(float)
-        FP = np.cumsum([(det.get("iou", 0) < t_iou and det.get('gt_id', 0) < CROWD_ID_T) for det in dets]).astype(float)
+        TP = self._tp_sum(category, t_iou)
+        FP = self._fp_sum(category, t_iou)
         nGT = self.num_gt_class(category)
         TPR = TP / nGT
         PPV = TP / (TP + FP + np.spacing(1))
