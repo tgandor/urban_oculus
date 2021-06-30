@@ -9,7 +9,7 @@ import numpy as np
 from detectron2.data import MetadataCatalog
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from uo.utils import load
+from uo.utils import load, aspectize, logged
 
 from .metrics import interpolated_PPV
 from .names import Names
@@ -175,9 +175,9 @@ class DetectionResults:
                 del detection["gt_id"]
             if "iou" in detection:
                 del detection["iou"]
+        self._all_detections_by_class = None
 
     def _match_detections(self, iou_index=0):
-
         def _match_by_gt(img):
             image_id = img["image_id"]
             category_id = img["category_id"] if self.use_cats else -1
@@ -281,6 +281,9 @@ class DetectionResults:
     def __getitem__(self, idx):
         return self.detections[idx]
 
+    def __repr__(self) -> str:
+        return "<DetectionResult>"
+
     @property
     def num_gt_all(self):
         return sum(g["ignore"] == 0 for v in self.coco._gts.values() for g in v)
@@ -362,9 +365,18 @@ class DetectionResults:
         q = self.pr_curve(category, t_iou)
         return np.mean(q)
 
-    def mean_average_precision(self, t_iou: float = 0.5):
+    def mean_average_precision(self, t_iou: float = 0.5, rich=False):
         """mAP metric."""
-        return np.mean([self.average_precision(c, t_iou) for c in self.names])
+        if not rich:
+            return np.mean([self.average_precision(c, t_iou) for c in self.names])
+        aps = {c: self.average_precision(c, t_iou) for c in self.names}
+        aps[f"mAP{t_iou}"] = np.mean(list(aps.values()))
+        return aps
+
+    def AP_score(self, category: str):
+        for i, t_iou in enumerate(self.IOU_THRS):
+            self.match_detections(i)
+        ...
 
 
 def _main():
@@ -377,7 +389,11 @@ def _main():
     parser.add_argument("--min-iou", type=float, default=0.5)
     parser.add_argument("--no-cache", "-C", action="store_true")
     parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--debug", "-d", action="store_true")
     args = parser.parse_args()
+
+    if args.debug:
+        aspectize(DetectionResults, logged)
 
     for detection_file in args.detection_files:
         res = DetectionResults(
@@ -388,9 +404,10 @@ def _main():
             gt_match=args.gt_match,
             iou_thresh=None if args.cocoeval else args.min_iou,
         )
-        print("mAP@.5:", res.mean_average_precision())
         res.match_detections(5)
-        print("mAP@.75:", res.mean_average_precision(0.75))
+        print("mAP@.75:", res.mean_average_precision(0.75, rich=True))
+        res.match_detections(0)
+        print("mAP@.5:", res.mean_average_precision(rich=True))
         if args.cocoeval:
             res.finish_cocoeval()
 

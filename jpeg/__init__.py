@@ -120,3 +120,10 @@ def mogrify_degrade(orig, filename, q, grayscale=False):
     gray = "-type Grayscale" if grayscale else ""
     shutil.copy(orig, filename)
     os.system(f"mogrify {gray} -quality {q} {filename}")
+
+
+def opencv_degrade_image(image, quality):
+    import cv2
+    data = cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, quality])[1]
+    image = cv2.imdecode(data, cv2.IMREAD_COLOR)
+    return image

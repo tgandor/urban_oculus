@@ -1,7 +1,28 @@
 import bz2
 import gzip
+import inspect
 import json
+from functools import wraps
 from itertools import islice
+
+
+def logged(func):
+    # based on: https://stackoverflow.com/questions/3467526/
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print("call:", func.__name__, args)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def aspectize(cls, decorator):
+    # based on: https://stackoverflow.com/questions/3467526/
+    for name, fn in inspect.getmembers(cls, inspect.isfunction):
+        if name.startswith('__'):
+            # printing *args would cause infinite recursion with __repr__
+            continue
+        setattr(cls, name, decorator(fn))
 
 
 def is_notebook():

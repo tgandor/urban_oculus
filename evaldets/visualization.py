@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from uo.utils import is_notebook, load
+from jpeg import opencv_degrade
 from .names import Names
 from .results import DetectionResults
 
@@ -65,7 +66,7 @@ DSI = DatasetIndex()
 IMAGE_ROOT = Path(DSI.meta.image_root)
 
 
-def image_for_id(image_id):
+def image_for_id(image_id, quality=101):
     path = IMAGE_ROOT / f"{image_id:012d}.jpg"
     img = cv2.imread(str(path))
     return img
