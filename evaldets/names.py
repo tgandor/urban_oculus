@@ -19,6 +19,9 @@ class Names:
     def name_to_idx(self, name):
         return self.name_to_i.get(name)
 
+    def items(self):
+        return self.name_to_i.items()
+
     @property
     def all(self):
         """Return all class names."""

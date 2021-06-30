@@ -113,7 +113,6 @@ class DetectionResults:
         self.iou_thresh = iou_thresh
         self.use_cats = use_cats
         # process
-        self.cache_loaded = False
         self.names = Names.for_dataset(self.dataset)
         self._detections_by_image_id = None  # TODO: memoize
         self._detections_by_class = None
@@ -126,21 +125,28 @@ class DetectionResults:
             for cid, values in groupby(sorted(self.gt.anns.values(), key=k), key=k)
         }
 
-        self._evaluate()
-        self._match_detections()
-        self._enrich_detections()
-        if cache and not self.cache_loaded:
-            self._save_cache()
+        self._load_detections()
 
-    def _evaluate(self):
-        self.detections, self.det_file = load_detections(self.input, self.cache)
+        if not self.cache_loaded:
+            self._evaluate()
+            self._match_detections()
+            self._enrich_detections()
+            if cache:
+                self._save_cache()
+
+    def _load_detections(self, no_cache: bool = False):
+        self.detections, self.det_file = load_detections(
+            self.input, self.cache and not no_cache
+        )
 
         if self.det_file.endswith(".pkl"):
             self.dt = None
             self.coco = None
             self.cache_loaded = True
-            return
+        else:
+            self.cache_loaded = False
 
+    def _evaluate(self):
         self.dt = self.gt.loadRes(self.detections)
 
         kwargs = {}
@@ -163,16 +169,21 @@ class DetectionResults:
 
         self.coco.evaluate()
 
-    def _match_detections(self):
-        if self.cache_loaded:
-            return
+    def _reset_detections(self):
+        for detection in self.detections:
+            if "gt_id" in detection:
+                del detection["gt_id"]
+            if "iou" in detection:
+                del detection["iou"]
+
+    def _match_detections(self, iou_index=0):
 
         def _match_by_gt(img):
             image_id = img["image_id"]
             category_id = img["category_id"] if self.use_cats else -1
             ious = self.coco.ious[image_id, category_id]
             dt_id2dind = {dt_id: dind for dind, dt_id in enumerate(img["dtIds"])}
-            for gind, fdt_id in enumerate(img["gtMatches"][0]):
+            for gind, fdt_id in enumerate(img["gtMatches"][iou_index]):
                 dt_id = int(fdt_id)
                 if not dt_id:
                     continue
@@ -186,7 +197,7 @@ class DetectionResults:
             category_id = img["category_id"] if self.use_cats else -1
             ious = self.coco.ious[image_id, category_id]
             gt_id2gind = {gt_id: gind for gind, gt_id in enumerate(img["gtIds"])}
-            for dind, fgt_id in enumerate(img["dtMatches"][0]):
+            for dind, fgt_id in enumerate(img["dtMatches"][iou_index]):
                 gt_id = int(fgt_id)
                 if not gt_id:
                     continue
@@ -210,19 +221,18 @@ class DetectionResults:
                 matching_strategy(img)
 
     def _enrich_detections(self):
-        if self.cache_loaded:
-            return
-
         for d in self.detections:
             d: dict
-            del d["segmentation"]
-            del d["id"]
-            if d["iscrowd"]:
-                # you should never see this:
-                print("Found crowd:", d)
-            del d["iscrowd"]
+            if "segmentation" in d:
+                del d["segmentation"]
+            if "id" in d:
+                del d["id"]
+            if "iscrowd" in d:
+                if d["iscrowd"]:
+                    # you should never see this:
+                    print("Found crowd:", d)
+                del d["iscrowd"]
 
-            # d.setdefault("true_positive", False)
             if self.rounding:
                 d["score"] = round(d["score"], 5)
                 d["bbox"] = [round(x, 1) for x in d["bbox"]]
@@ -230,12 +240,23 @@ class DetectionResults:
                 if "iou" in d:
                     d["iou"] = round(d["iou"], 3)
 
-            # replace category_id with category name, as last key:
-            d["category"] = self.names.get(d["category_id"])
-            del d["category_id"]
-            del d["area"]  # purely derivative from w*h (mod rounding)
-            d["x"], d["y"], d["w"], d["h"] = d["bbox"]
-            del d["bbox"]
+            if "category_id" in d:
+                # replace category_id with category name
+                d["category"] = self.names.get(d["category_id"])
+                del d["category_id"]
+            if "area" in d:
+                del d["area"]  # derivative from w*h
+            if "bbox" in d:
+                d["x"], d["y"], d["w"], d["h"] = d["bbox"]
+                del d["bbox"]
+
+    def match_detections(self, iou_index=0):
+        if self.coco is None:
+            self._load_detections(True)
+            self._evaluate()
+        self._reset_detections()
+        self._match_detections(iou_index)
+        self._enrich_detections()
 
     def finish_cocoeval(self):
         if self.coco is None:
@@ -322,24 +343,7 @@ class DetectionResults:
         ).astype(float)
 
     def pr_curve(self, category: str, t_iou: float = 0.5):
-        """Return the precision-recall curve sampled at RECALL_THRS"""
-        dets = self.detections_by_class(category)
-        TP = np.cumsum([det.get("iou", 0) >= t_iou for det in dets])
-        FP = np.cumsum([det.get("iou", 0) < t_iou for det in dets])
-        nGT = self.num_gt_class(category)
-        TPR = TP / nGT
-        PPV = TP / (TP + FP)
-        PPVi = interpolated_PPV(PPV)
-        inds = np.searchsorted(TPR, self.RECALL_THRS, side="left")
-        q = np.zeros_like(self.RECALL_THRS)
-        for ri, pi in enumerate(inds):
-            if pi >= len(PPVi):
-                break
-            q[ri] = PPVi[pi]
-        return q
-
-    def pr_curve2(self, category: str, t_iou: float = 0.5):
-        """Wrong: longer... Return the precision-recall curve sampled at RECALL_THRS"""
+        """WReturn the precision-recall curve sampled at RECALL_THRS."""
         TP = self._tp_sum(category, t_iou)
         FP = self._fp_sum(category, t_iou)
         nGT = self.num_gt_class(category)
@@ -385,6 +389,7 @@ def _main():
             iou_thresh=None if args.cocoeval else args.min_iou,
         )
         print("mAP@.5:", res.mean_average_precision())
+        res.match_detections(5)
         print("mAP@.75:", res.mean_average_precision(0.75))
         if args.cocoeval:
             res.finish_cocoeval()
