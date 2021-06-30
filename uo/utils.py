@@ -2,6 +2,7 @@ import bz2
 import gzip
 import inspect
 import json
+import pickle
 from functools import wraps
 from itertools import islice
 
@@ -49,6 +50,33 @@ def load(path: str) -> dict:
     if path.endswith(".json"):
         with open(path) as fs:
             return json.load(fs)
+    if path.endswith(".pkl"):
+        with open(path, 'rb') as pkl:
+            return pickle.load(pkl)
+    if path.endswith(".pkl.gz"):
+        with gzip.open(path) as pkl:
+            return pickle.load(pkl)
+
+    raise ValueError("unknown file type")
+
+
+def save(obj: dict, path: str) -> None:
+    if path.endswith(".json.gz"):
+        with gzip.open(path, 'w') as fs:
+            return json.dump(obj, fs)
+    if path.endswith(".json.bz2"):
+        with bz2.open(path, 'w') as fs:
+            return json.dump(obj, fs)
+    if path.endswith(".json"):
+        with open(path) as fs:
+            return json.dump(obj, fs)
+    if path.endswith(".pkl"):
+        with open(path, 'wb') as pkl:
+            return pickle.dump(obj, pkl)
+    if path.endswith(".pkl.gz"):
+        with gzip.open(path, 'wb') as pkl:
+            return pickle.dump(obj, pkl)
+
     raise ValueError("unknown file type")
 
 

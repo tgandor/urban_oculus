@@ -1,19 +1,19 @@
 import glob
-from itertools import groupby
+import gzip
 import os
-from operator import itemgetter
 import pickle
 import time
+from itertools import groupby
+from operator import itemgetter
 
 import numpy as np
 from detectron2.data import MetadataCatalog
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from uo.utils import load, aspectize, logged
+from uo.utils import aspectize, load, logged, save
 
 from .metrics import interpolated_PPV
 from .names import Names
-
 
 CROWD_ID_T = 10 ** 9
 """
@@ -62,8 +62,7 @@ def load_detections(file_or_dir, cache=True):
 
     cache_file = os.path.join(dump_dir, "detections.pkl")
     if cache and os.path.exists(cache_file):
-        with open(cache_file, "rb") as pkl:
-            detections = pickle.load(pkl)
+        detections = load(cache_file)
         print("Loaded cached detections:", cache_file)
         return detections, cache_file
 
@@ -147,6 +146,12 @@ class DetectionResults:
             self.cache_loaded = False
 
     def _evaluate(self):
+        cache_file = os.path.join(os.path.dirname(self.det_file), "coco.pkl.gz")
+        if self.cache and os.path.exists(cache_file):
+            self.coco = load(cache_file)
+            print(f"Loaded cached COCOEval: {cache_file}")
+            return
+
         self.dt = self.gt.loadRes(self.detections)
 
         kwargs = {}
@@ -225,6 +230,25 @@ class DetectionResults:
             d: dict
             if "segmentation" in d:
                 del d["segmentation"]
+
+            if "iscrowd" in d:
+                if d["iscrowd"]:
+                    # you should never see this:
+                    print("Found crowd:", d)
+                del d["iscrowd"]
+
+            if "category_id" in d:
+                # replace category_id with category name
+                d["category"] = self.names.get(d["category_id"])
+
+            if "bbox" in d:
+                d["x"], d["y"], d["w"], d["h"] = d["bbox"]
+
+    def _clean_detections(self):
+        for d in self.detections:
+            d: dict
+            if "segmentation" in d:
+                del d["segmentation"]
             if "id" in d:
                 del d["id"]
             if "iscrowd" in d:
@@ -241,36 +265,37 @@ class DetectionResults:
                     d["iou"] = round(d["iou"], 3)
 
             if "category_id" in d:
-                # replace category_id with category name
-                d["category"] = self.names.get(d["category_id"])
                 del d["category_id"]
             if "area" in d:
                 del d["area"]  # derivative from w*h
             if "bbox" in d:
-                d["x"], d["y"], d["w"], d["h"] = d["bbox"]
                 del d["bbox"]
 
-    def match_detections(self, iou_index=0):
+    def _ensure_cocoeval(self):
         if self.coco is None:
-            self._load_detections(True)
             self._evaluate()
+
+    def match_detections(self, iou_index=0):
+        self._ensure_cocoeval()
         self._reset_detections()
         self._match_detections(iou_index)
         self._enrich_detections()
 
     def finish_cocoeval(self):
-        if self.coco is None:
-            print("Cached results has no COCOEval to finish.")
-            return
-
+        self._ensure_cocoeval()
         self.coco.accumulate()
         self.coco.summarize()
 
     def _save_cache(self):
         cache_file = os.path.join(os.path.dirname(self.det_file), "detections.pkl")
-        with open(cache_file, "wb") as pkl:
-            print("Saving detections to cache:", cache_file)
-            pickle.dump(self.detections, pkl)
+        print("Saving detections to cache:", cache_file)
+        save(self.detections, cache_file)
+
+    def save_cocoeval(self):
+        """Save the COCOeval object for future re-use."""
+        cache_file = os.path.join(os.path.dirname(self.det_file), "coco.pkl.gz")
+        save(self.coco, cache_file)
+
 
     def __iter__(self):
         return iter(self.detections)
@@ -381,6 +406,7 @@ class DetectionResults:
 
 def _main():
     import argparse
+    import pprint
 
     parser = argparse.ArgumentParser()
     parser.add_argument("detection_files", nargs="+")
@@ -405,9 +431,11 @@ def _main():
             iou_thresh=None if args.cocoeval else args.min_iou,
         )
         res.match_detections(5)
-        print("mAP@.75:", res.mean_average_precision(0.75, rich=True))
+        print("mAP@.75:")
+        pprint.pprint(res.mean_average_precision(0.75, rich=True))
         res.match_detections(0)
-        print("mAP@.5:", res.mean_average_precision(rich=True))
+        print("mAP@.5:")
+        pprint.pprint(res.mean_average_precision(rich=True))
         if args.cocoeval:
             res.finish_cocoeval()
 
