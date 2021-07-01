@@ -1,7 +1,6 @@
+from collections import defaultdict
 import glob
-import gzip
 import os
-import pickle
 import time
 from itertools import groupby
 from operator import itemgetter
@@ -87,6 +86,10 @@ class DetectionResults:
     IOU_THRS = np.linspace(
         0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True
     )
+    # coco.params.maxDet = [1, 10, 100]
+    TOP_MAX_DET = -1
+    # coco.params.areaRng = [<all>, <small>, <medium>, <large>]
+    ALL_AREA = 0
 
     def __init__(
         self,
@@ -296,7 +299,6 @@ class DetectionResults:
         cache_file = os.path.join(os.path.dirname(self.det_file), "coco.pkl.gz")
         save(self.coco, cache_file)
 
-
     def __iter__(self):
         return iter(self.detections)
 
@@ -398,10 +400,52 @@ class DetectionResults:
         aps[f"mAP{t_iou}"] = np.mean(list(aps.values()))
         return aps
 
-    def AP_score(self, category: str):
+    def AP_score_cat(self, category: str, rich=False):
+        aps = {}
         for i, t_iou in enumerate(self.IOU_THRS):
             self.match_detections(i)
-        ...
+            aps[t_iou] = self.average_precision(category, t_iou)
+        if rich:
+            return aps
+        return np.mean(list(aps.values()))
+
+    def AP_score(self, rich=False):
+        aps = defaultdict(dict)
+        for i, t_iou in enumerate(self.IOU_THRS):
+            self.match_detections(i)
+            for category in self.names:
+                aps[category][t_iou] = self.average_precision(category, t_iou)
+        cat_aps = {k: np.mean(list(v.values())) for k, v in aps.items()}
+        ap = np.mean(list(cat_aps.values()))
+        if not rich:
+            return ap
+        return {"AP": ap, "AP-class": cat_aps, "AP-class-iou": aps}
+
+    def coco_AP_score(self):
+        return np.mean(
+            self.coco.eval["precision"][:, :, :, self.ALL_AREA, self.TOP_MAX_DET]
+        )
+
+    def coco_AP_cat(self, category, iou_index=0):
+        class_id = self.names.name_to_idx(category)
+        return np.mean(
+            self.coco.eval["precision"][:, :, class_id, self.ALL_AREA, self.TOP_MAX_DET]
+        )
+
+    def coco_mAP_score(self, iou_index=0):
+        return np.mean(
+            self.coco.eval["precision"][
+                iou_index, :, :, self.ALL_AREA, self.TOP_MAX_DET
+            ]
+        )
+
+    def coco_mAP_cat(self, category, iou_index=0):
+        class_id = self.names.name_to_idx(category)
+        return np.mean(
+            self.coco.eval["precision"][
+                iou_index, :, class_id, self.ALL_AREA, self.TOP_MAX_DET
+            ]
+        )
 
 
 def _main():

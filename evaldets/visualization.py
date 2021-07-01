@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from uo.utils import is_notebook, load
-from jpeg import opencv_degrade
+from jpeg import opencv_degrade_image
 from .names import Names
 from .results import DetectionResults
 
@@ -72,8 +72,10 @@ def image_for_id(image_id, quality=101):
     return img
 
 
-def visualizer_for_id(image_id, **kwargs):
+def visualizer_for_id(image_id, q=None, **kwargs):
     img = image_for_id(image_id)
+    if q is not None:
+        img = opencv_degrade_image(img, q)
     visualizer = Visualizer(img[:, :, ::-1], metadata=DSI.meta, **kwargs)
     return visualizer
 
@@ -190,7 +192,7 @@ def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
     ]
 
 
-def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", scale=1.0, v=0):
+def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", q=None, scale=1.0, v=0):
     if crop is False:
         return show_detections([det], mode=mode, scale=scale, v=v)
 
@@ -205,12 +207,12 @@ def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", scale=1.
         return v_img
 
 
-def show_detections(dets: Collection[dict], *, mode="cv2", scale=1.0, v=0):
+def show_detections(dets: Collection[dict], *, mode="cv2", q=None, scale=1.0, v=0):
     k = itemgetter("image_id")
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
         print("image_id =", image_id)
 
-        visualizer = visualizer_for_id(image_id, scale=scale)
+        visualizer = visualizer_for_id(image_id, q, scale=scale)
 
         gt_boxes = []
         gt_labels = []
