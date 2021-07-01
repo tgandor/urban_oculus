@@ -170,7 +170,7 @@ def show_image_objects(image_id, *, show_ids=True, category=None, scale=1.0, v=0
     cv2_imshow(v_img, True)
 
 
-def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
+def _crop_detection(v_img: np.array, det: dict, margin=5, scale=1.0) -> np.array:
     x0, y0, w, h = itemgetter(*"xywh")(det)
     x1, y1 = x0 + w, y0 + h
 
@@ -183,7 +183,7 @@ def _crop_detection(v_img: np.array, det: dict, margin=5) -> np.array:
         x1 = max(x1, gx + gw)
         y1 = max(y1, gy + gh)
 
-    x0, y0, x1, y1 = map(int, (x0, y0, x1, y1))
+    x0, y0, x1, y1 = (int(x * scale) for x in (x0, y0, x1, y1))
 
     return v_img[
         max(y0 - margin, 0) : y1 + margin,  # noqa
@@ -197,7 +197,7 @@ def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", q=None, 
         return show_detections([det], mode=mode, scale=scale, v=v)
 
     v_img = show_detections([det], mode="ret", scale=scale, v=v)
-    v_img = _crop_detection(v_img, det, crop_margin)
+    v_img = _crop_detection(v_img, det, crop_margin, scale)
 
     if mode == "mpl":
         plt.imshow(v_img)
