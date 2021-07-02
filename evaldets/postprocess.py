@@ -16,7 +16,7 @@ def baseline_table(reval_dir, header=False):
         # \newcommand\tsub[1]{\textsubscript{#1}}
         print(
             r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
-            r" & AP\tsub{s} & TPR & PPV & TP & FP \\"
+            r" & AP\tsub{s} & TPR & PPV & TP & FP & EX \\"
         )
         print(r"\midrule")
 
@@ -26,7 +26,7 @@ def baseline_table(reval_dir, header=False):
         row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
         print(
             "{model} & {AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f}"
-            r" & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,} \\".format(
+            r" & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,} & {ex:,} \\".format(
                 **row
             )
         )
@@ -35,7 +35,7 @@ def baseline_table(reval_dir, header=False):
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument("reval_dir")
-    parser.add_argument('--header', action='store_true')
+    parser.add_argument("--header", "-g", action="store_true")
     args = parser.parse_args()
     baseline_table(args.reval_dir, args.header)
 
