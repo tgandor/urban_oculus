@@ -276,6 +276,9 @@ class DetectionResults:
 
     def _ensure_cocoeval(self):
         if self.coco is None:
+            # COCO params for compatibility
+            self.area_rng = None
+            self.iou_thresh = None
             self._evaluate()
 
     def match_detections(self, iou_index=0):
@@ -334,7 +337,7 @@ class DetectionResults:
                 )
             }
 
-        return self._all_detections_by_class[name]
+        return self._all_detections_by_class.get(name, [])
 
     def detections_by_class(self, name: str) -> list:
         if self._detections_by_class is None:
@@ -373,7 +376,7 @@ class DetectionResults:
         ).astype(float)
 
     def pr_curve(self, category: str, t_iou: float = 0.5):
-        """WReturn the precision-recall curve sampled at RECALL_THRS."""
+        """Return the precision-recall curve sampled at RECALL_THRS."""
         TP = self._tp_sum(category, t_iou)
         FP = self._fp_sum(category, t_iou)
         nGT = self.num_gt_class(category)
@@ -422,17 +425,20 @@ class DetectionResults:
         return {"AP": ap, "AP-class": cat_aps, "AP-class-iou": aps}
 
     def coco_AP_score(self):
+        self._ensure_cocoeval()
         return np.mean(
             self.coco.eval["precision"][:, :, :, self.ALL_AREA, self.TOP_MAX_DET]
         )
 
     def coco_AP_cat(self, category, iou_index=0):
+        self._ensure_cocoeval()
         class_id = self.names.name_to_idx(category)
         return np.mean(
             self.coco.eval["precision"][:, :, class_id, self.ALL_AREA, self.TOP_MAX_DET]
         )
 
     def coco_mAP_score(self, iou_index=0):
+        self._ensure_cocoeval()
         return np.mean(
             self.coco.eval["precision"][
                 iou_index, :, :, self.ALL_AREA, self.TOP_MAX_DET
@@ -440,12 +446,38 @@ class DetectionResults:
         )
 
     def coco_mAP_cat(self, category, iou_index=0):
+        self._ensure_cocoeval()
         class_id = self.names.name_to_idx(category)
         return np.mean(
             self.coco.eval["precision"][
                 iou_index, :, class_id, self.ALL_AREA, self.TOP_MAX_DET
             ]
         )
+
+    def count_TP(self, t_iou=0.5, t_score=0.5):
+        return sum(
+            (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) < CROWD_ID_T and det["score"] >= t_score)
+            for det in self.detections
+        )
+
+    def count_FP(self, t_iou=0.5, t_score=0.5):
+        return sum(
+            (det.get("iou", 0) < t_iou and det["score"] >= t_score)
+            for det in self.detections
+        )
+
+    def count_EX(self, t_iou=0.5, t_score=0.5):
+        return sum(
+            (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) > CROWD_ID_T and det["score"] >= t_score)
+            for det in self.detections
+        )
+
+    def summary(self):
+        return {
+            'FP': self.count_FP(),
+            'TP': self.count_TP(),
+            'EX': self.count_EX(),
+        }
 
 
 def _main():

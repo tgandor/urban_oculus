@@ -194,12 +194,13 @@ for df in args.detection_files:
             100 * precision,
             tp,
             fp,
+            n_ign,
         ]
     )
 
     with open(".evaluate_log.txt", "a") as log:
         print(
-            f"{model:10s}: TP {tp:,} (GT {n_gt:,}, FP {fp:,}), "
+            f"{model:10s}: TP {tp:,} (GT {n_gt:,}, FP {fp:,}, EX {n_ign}), "
             f"PPV {precision*100:.1f} TPR {recall*100:.1f} F1 {f1*100:.1f} - {det_filename}",
             file=log,
         )
@@ -215,6 +216,7 @@ for df in args.detection_files:
         # TypeError: Object of type int64 is not JSON serializable...
         "tp": int(tp),
         "fp": int(fp),
+        "ex": int(n_ign),
         "precision": precision,
         "recall": recall,
         "f1": f1,
@@ -224,7 +226,7 @@ for df in args.detection_files:
     }
     # import code; code.interact(local=locals())
     with open(new_results_file, "w") as jsf:
-        json.dump(rich_results, jsf)
+        json.dump(rich_results, jsf, indent=2)
 
     print("-" * 79)
 
@@ -234,12 +236,12 @@ for df in args.detection_files:
 metrics.sort(key=itemgetter(0))
 print(
     r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
-    r" & AP\tsub{s} & TPR & PPV & TP & FP \\"
+    r" & AP\tsub{s} & TPR & PPV & TP & FP & EX \\"
 )
 print(r"\midrule")
 for row in metrics:
-    model, ap, ap50, ap75, apl, apm, aps, tpr, ppv, tp, fp = row
+    model, ap, ap50, ap75, apl, apm, aps, tpr, ppv, tp, fp, n_ign = row
     print(
         f"{model} & {ap:.1f} & {ap50:.1f} & {ap75:.1f} & {apl:.1f} & {apm:.1f}"
-        f" & {aps:.1f} & {tpr:.1f} & {ppv:.1f} & {tp:,} & {fp:,} \\\\"
+        f" & {aps:.1f} & {tpr:.1f} & {ppv:.1f} & {tp:,} & {fp:,} & {n_ign} \\\\"
     )
