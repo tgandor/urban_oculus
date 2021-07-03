@@ -47,7 +47,7 @@ def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
     return result
 
 
-def load_detections(file_or_dir, cache=True):
+def load_detections(file_or_dir, cache=True, debug=True):
     file_or_dir = os.path.expanduser(file_or_dir)
 
     if os.path.isdir(file_or_dir):
@@ -62,7 +62,8 @@ def load_detections(file_or_dir, cache=True):
     cache_file = os.path.join(dump_dir, "detections.pkl")
     if cache and os.path.exists(cache_file):
         detections = load(cache_file)
-        print("Loaded cached detections:", cache_file)
+        if debug:
+            print("Loaded cached detections:", cache_file)
         return detections, cache_file
 
     detections = load(det_filename)
@@ -138,7 +139,7 @@ class DetectionResults:
 
     def _load_detections(self, no_cache: bool = False):
         self.detections, self.det_file = load_detections(
-            self.input, self.cache and not no_cache
+            self.input, self.cache and not no_cache, self.debug
         )
 
         if self.det_file.endswith(".pkl"):
@@ -375,10 +376,15 @@ class DetectionResults:
             ]
         ).astype(float)
 
-    def pr_curve(self, category: str, t_iou: float = 0.5):
+    def pr_curve(self, category: str, t_iou: float = 0.5, t_score: float = None):
         """Return the precision-recall curve sampled at RECALL_THRS."""
         TP = self._tp_sum(category, t_iou)
         FP = self._fp_sum(category, t_iou)
+        if t_score is not None:
+            scores = [-x["score"] for x in self.all_detections_by_class(category)]
+            idx = np.searchsorted(scores, -t_score, "right")
+            TP = TP[:idx]
+            FP = FP[:idx]
         nGT = self.num_gt_class(category)
         TPR = TP / nGT
         PPV = TP / (TP + FP + np.spacing(1))
@@ -391,33 +397,35 @@ class DetectionResults:
             q[ri] = PPVi[pi]
         return q
 
-    def average_precision(self, category: str, t_iou: float = 0.5):
-        q = self.pr_curve(category, t_iou)
+    def average_precision(
+        self, category: str, t_iou: float = 0.5, t_score: float = None
+    ):
+        q = self.pr_curve(category, t_iou, t_score)
         return np.mean(q)
 
-    def mean_average_precision(self, t_iou: float = 0.5, rich=False):
+    def mean_average_precision(self, t_iou: float = 0.5, t_score: float = None, rich=False):
         """mAP metric."""
         if not rich:
-            return np.mean([self.average_precision(c, t_iou) for c in self.names])
+            return np.mean([self.average_precision(c, t_iou, t_score) for c in self.names])
         aps = {c: self.average_precision(c, t_iou) for c in self.names}
         aps[f"mAP{t_iou}"] = np.mean(list(aps.values()))
         return aps
 
-    def AP_score_cat(self, category: str, rich=False):
+    def AP_score_cat(self, category: str, t_score: float = None, rich=False):
         aps = {}
         for i, t_iou in enumerate(self.IOU_THRS):
             self.match_detections(i)
-            aps[t_iou] = self.average_precision(category, t_iou)
+            aps[t_iou] = self.average_precision(category, t_iou, t_score)
         if rich:
             return aps
         return np.mean(list(aps.values()))
 
-    def AP_score(self, rich=False):
+    def AP_score(self, t_score: float = None, rich=False):
         aps = defaultdict(dict)
         for i, t_iou in enumerate(self.IOU_THRS):
             self.match_detections(i)
             for category in self.names:
-                aps[category][t_iou] = self.average_precision(category, t_iou)
+                aps[category][t_iou] = self.average_precision(category, t_iou, t_score)
         cat_aps = {k: np.mean(list(v.values())) for k, v in aps.items()}
         ap = np.mean(list(cat_aps.values()))
         if not rich:
@@ -430,7 +438,7 @@ class DetectionResults:
             self.coco.eval["precision"][:, :, :, self.ALL_AREA, self.TOP_MAX_DET]
         )
 
-    def coco_AP_cat(self, category, iou_index=0):
+    def coco_AP_cat(self, category):
         self._ensure_cocoeval()
         class_id = self.names.name_to_idx(category)
         return np.mean(
@@ -454,29 +462,37 @@ class DetectionResults:
             ]
         )
 
-    def count_TP(self, t_iou=0.5, t_score=0.5):
+    def count_TP(self, t_iou=0.5, t_score=0):
         return sum(
-            (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) < CROWD_ID_T and det["score"] >= t_score)
+            (
+                det.get("iou", 0) >= t_iou
+                and det.get("gt_id", 0) < CROWD_ID_T
+                and det["score"] >= t_score
+            )
             for det in self.detections
         )
 
-    def count_FP(self, t_iou=0.5, t_score=0.5):
+    def count_FP(self, t_iou=0.5, t_score=0):
         return sum(
             (det.get("iou", 0) < t_iou and det["score"] >= t_score)
             for det in self.detections
         )
 
-    def count_EX(self, t_iou=0.5, t_score=0.5):
+    def count_EX(self, t_iou=0.5, t_score=0):
         return sum(
-            (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) > CROWD_ID_T and det["score"] >= t_score)
+            (
+                det.get("iou", 0) >= t_iou
+                and det.get("gt_id", 0) > CROWD_ID_T
+                and det["score"] >= t_score
+            )
             for det in self.detections
         )
 
-    def summary(self):
+    def summary(self, t_iou=0.5, t_score=0):
         return {
-            'FP': self.count_FP(),
-            'TP': self.count_TP(),
-            'EX': self.count_EX(),
+            "FP": self.count_FP(t_iou, t_score),
+            "TP": self.count_TP(t_iou, t_score),
+            "EX": self.count_EX(t_iou, t_score),
         }
 
 

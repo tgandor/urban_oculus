@@ -1,11 +1,20 @@
 import argparse
 import glob
+import warnings
 
 from uo.utils import load
 
 
 def load_rich_results(reval_dir):
-    return [load(rr) for rr in sorted(glob.glob(f"{reval_dir}/*/rich_results.json"))]
+    rich_results = [
+        load(rr) for rr in sorted(glob.glob(f"{reval_dir}/*/rich_results.json"))
+    ]
+    if not rich_results:
+        warnings.warn(
+            f"No rich results found in {reval_dir}. "
+            "Make sure to pass a directory with evaluator_dump_<model>_<quality> subdirectories."
+        )
+    return rich_results
 
 
 def baseline_table(reval_dir, header=False):

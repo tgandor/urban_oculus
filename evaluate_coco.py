@@ -134,6 +134,7 @@ for df in args.detection_files:
     assert tp + fp + n_ign == len(
         detections
     ), f"TP/{tp}/ + FP/{fp}/ +I/{n_ign}/ == {tp+fp} != |D| /{len(detections)}/"
+
     f1 = 2 * precision * recall / (precision + recall)
 
     print(f"Total objects found: {tp:,} (of {n_gt:,} GT, {n_ign:,} ignored, {fp:,} FP)")
