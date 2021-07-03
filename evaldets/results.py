@@ -127,6 +127,7 @@ class DetectionResults:
             self.names.get(cid): sum(g["iscrowd"] == 0 for g in values)
             for cid, values in groupby(sorted(self.gt.anns.values(), key=k), key=k)
         }
+        self._num_gt_all = sum(self._num_gt_class.values())
 
         self._load_detections()
 
@@ -316,10 +317,6 @@ class DetectionResults:
         return "<DetectionResult>"
 
     @property
-    def num_gt_all(self):
-        return sum(g["ignore"] == 0 for v in self.coco._gts.values() for g in v)
-
-    @property
     def detections_by_score(self):
         # sorted() is stable, so np.argsort(kind="mergesort") is no issue
         return sorted(self.detections, key=itemgetter("score"), reverse=True)
@@ -357,8 +354,12 @@ class DetectionResults:
         # TODO: dict
         return [d for d in self.detections if d["image_id"] == image_id]
 
+    @property
+    def num_gt_all(self):
+        return sum(g["ignore"] == 0 for g in self.gt.anns.values())
+
     def num_gt_class(self, name):
-        return self._num_gt_class[name]
+        return self._num_gt_all
 
     def _tp_sum(self, category: str, t_iou: float):
         return np.cumsum(
@@ -489,10 +490,17 @@ class DetectionResults:
         )
 
     def summary(self, t_iou=0.5, t_score=0):
+        FP = self.count_FP(t_iou, t_score)
+        TP = self.count_TP(t_iou, t_score)
+        PPV = TP / (TP + FP)
+        TPR = TP / self._num_gt_all
         return {
-            "FP": self.count_FP(t_iou, t_score),
-            "TP": self.count_TP(t_iou, t_score),
+            "FP": FP,
+            "TP": TP,
+            "PPV": PPV,
+            "TPR": TPR,
             "EX": self.count_EX(t_iou, t_score),
+            "F1": 2 * PPV * TPR / (PPV + TPR),
         }
 
 
