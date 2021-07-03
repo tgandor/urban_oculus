@@ -1,8 +1,16 @@
 import argparse
 import glob
+import os
 import warnings
 
 from uo.utils import load
+
+
+class Summary:
+    def __init__(self, reval_dir: str) -> None:
+        self.reval_dir = reval_dir
+        self.phys_dir = os.path.expanduser(reval_dir)
+        self.subdirs = sorted(glob.glob(os.path.join(self.phys_dir, "*")))
 
 
 def load_rich_results(reval_dir):
