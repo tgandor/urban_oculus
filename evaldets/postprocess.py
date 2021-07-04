@@ -1,39 +1,97 @@
 import argparse
+from functools import wraps
 import glob
+import logging
 import os
 import warnings
 
 import numpy as np
 import pandas as pd
 
-from uo.utils import load
+from uo.utils import dirbasename, load, save
 from .results import DetectionResults
 
+logger = logging.getLogger()
 
-def summaries_by_tc(result_dir):
-    dr = DetectionResults(result_dir)
-    data = []
-    for t_score in np.arange(0.05, 1, 0.1):
-        data.append(dr.summary(t_score=t_score))
-    return pd.DataFrame(data=data)
+
+def cached_directory_data(f):
+    @wraps(f)
+    def wrapper(directory, *args):
+        cache_file = os.path.join(directory, f"{f.__name__}.pkl.gz")
+        if os.path.exists(cache_file):
+            logger.info(f"Loading cached {f.__name__} results from {cache_file}.")
+            return load(cache_file)
+        value = f(directory, *args)
+        save(value, cache_file)
+        logger.info(f"Cached {f.__name__} results to {cache_file}.")
+        return value
+
+    return wrapper
+
+
+SCORE_TRHS = np.arange(0.05, 1, 0.05)
 
 
 def get_summary(subdir, t_score=0):
     dr = DetectionResults(subdir)
     summary = dr.summary(t_score=t_score)
-    print(summary)
-    summary['subdir'] = os.path.basename(subdir)
+    logger.debug(f"{subdir=}, {dirbasename(subdir)=}")
+    summary["subdir"] = dirbasename(subdir)  # subdirs now end in /
     return summary
+
+
+@cached_directory_data
+def summaries_by_tc(result_dir):
+    dr = DetectionResults(result_dir)
+    data = []
+    for t_score in SCORE_TRHS:
+        t_score = round(t_score, 2)
+        data.append(dr.summary(t_score=t_score))
+    return pd.DataFrame(data=data)
+
+
+@cached_directory_data
+def subdir_summaries(top_dir):
+    subdirs = sorted(glob.glob(os.path.join(top_dir, "*/")))
+    return pd.DataFrame([get_summary(subdir) for subdir in subdirs])
+
+
+def load_meta(subdir):
+    results = os.path.join(subdir, "rich_results.json")
+    return load(results)
 
 
 class Summary:
     def __init__(self, reval_dir: str) -> None:
         self.reval_dir = reval_dir
         self.phys_dir = os.path.expanduser(reval_dir)
-        self.subdirs = sorted(glob.glob(os.path.join(self.phys_dir, "*")))
+        self.subdirs = sorted(glob.glob(os.path.join(self.phys_dir, "*/")))
+        self.metadata = {subdir: load_meta(subdir) for subdir in self.subdirs}
 
     def get_summaries(self):
-        return pd.DataFrame([get_summary(subdir) for subdir in self.subdirs])
+        return subdir_summaries(self.phys_dir)
+
+    def tc_summaries(self):
+        for s in self.subdirs:
+            model = self.metadata[s]["model"]
+            df = summaries_by_tc(s)
+            yield model, df
+
+    def plot_tc_summaries(self, axes=None, **kwargs):
+        if axes is not None:
+            axes = iter(axes.ravel())
+        for model, df in self.tc_summaries():
+            if axes is not None:
+                ax = next(axes)
+                kwargs['ax'] = ax
+            df.plot(
+                x="T_c",
+                y=["PPV", "TPR", "F1"],
+                ylim=(0, 1),
+                ylabel="value",
+                title=model,
+                **kwargs,
+            )
 
 
 def load_rich_results(reval_dir):

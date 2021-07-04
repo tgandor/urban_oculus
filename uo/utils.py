@@ -2,9 +2,26 @@ import bz2
 import gzip
 import inspect
 import json
+import os
 import pickle
 from functools import wraps
 from itertools import islice
+
+
+def dirbasename(path: str):
+    if path.endswith('/'):
+        return os.path.basename(os.path.dirname(path))
+    return os.path.basename(path)
+
+
+def cached(path):
+    """TODO: implement smarter caching based on f, *args."""
+    def wrap(f):
+        @wraps(f)
+        def wrapper(*args):
+            return f(*args)
+        return wrapper
+    return wrap
 
 
 def logged(func):
