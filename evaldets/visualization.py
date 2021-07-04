@@ -192,7 +192,9 @@ def _crop_detection(v_img: np.array, det: dict, margin=5, scale=1.0) -> np.array
     ]
 
 
-def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", q=None, scale=1.0, v=0):
+def show_detection(
+    det: dict, *, crop=False, crop_margin=5, mode="cv2", q=None, scale=1.0, v=0
+):
     if crop is False:
         return show_detections([det], mode=mode, scale=scale, v=v)
 
@@ -207,7 +209,12 @@ def show_detection(det: dict, *, crop=False, crop_margin=5, mode="cv2", q=None, 
         return v_img
 
 
-def show_detections(dets: Collection[dict], *, mode="cv2", q=None, scale=1.0, v=0):
+def show_detections(
+    dets: Collection[dict], *, mode="cv2", q=None, scale=1.0, min_score=None, v=0
+):
+    if min_score:
+        dets = [d for d in dets if d["score"] >= min_score]
+
     k = itemgetter("image_id")
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
         print("image_id =", image_id)
@@ -218,9 +225,11 @@ def show_detections(dets: Collection[dict], *, mode="cv2", q=None, scale=1.0, v=
         gt_labels = []
         boxes = []
         labels = []
+        seen_gt = set()
 
         for det in img_dets:
-            if "gt_id" in det:
+            if "gt_id" in det and det["gt_id"] not in seen_gt:
+                seen_gt.add(det["gt_id"])
                 gt = DSI.gt[det["gt_id"]]
                 gt_label = f"GT#{gt['id']}" + (" (crowd)" if gt["iscrowd"] else "")
                 gt_boxes.append(gt["bbox"])
@@ -265,24 +274,30 @@ def _main():
 
     parser = argparse.ArgumentParser("view_detections")
     parser.add_argument("detections_path")
-    parser.add_argument("--scale", "-s", type=float, default=1.0)
-    parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--category", "-c")
     parser.add_argument("--image-id", "-i", type=int)
+    parser.add_argument("--min-score", "-t", type=float)
+    parser.add_argument("--scale", "-s", type=float, default=2.0)
+    parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
-    dr = DetectionResults(args.detections_path)
+    dr = DetectionResults(args.detections_path, debug=args.verbose)
     if args.image_id:
         detections = dr.detections_by_image_id(args.image_id)
         if args.category:
             detections = [d for d in detections if d["category"] == args.category]
-        show_detections(detections, v=args.verbose, scale=args.scale)
+        show_detections(
+            detections, v=args.verbose, scale=args.scale, min_score=args.min_score
+        )
     elif args.category:
         show_detections(
-            dr.detections_by_class(args.category), v=args.verbose, scale=args.scale
+            dr.detections_by_class(args.category),
+            v=args.verbose,
+            scale=args.scale,
+            min_score=args.min_score,
         )
     else:
-        show_detections(dr, v=args.verbose, scale=args.scale)
+        show_detections(dr, v=args.verbose, scale=args.scale, min_score=args.min_score)
 
 
 def _show_gt():
