@@ -356,10 +356,10 @@ class DetectionResults:
 
     @property
     def num_gt_all(self):
-        return sum(g["ignore"] == 0 for g in self.gt.anns.values())
+        return self._num_gt_all
 
     def num_gt_class(self, name):
-        return self._num_gt_all
+        return self._num_gt_class[name]
 
     def _tp_sum(self, category: str, t_iou: float):
         return np.cumsum(
