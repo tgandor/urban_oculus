@@ -77,9 +77,17 @@ class Summary:
             df = summaries_by_tc(s)
             yield model, df
 
+    def q_summaries(self):
+        # TODO: wny empty? :)
+        for s in self.subdirs:
+            model = self.metadata[s]["model"]
+            df = subdir_summaries(s)
+            yield model, df
+
     def plot_tc_summaries(self, axes=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
+        subplot_ord = ord('A')
         for model, df in self.tc_summaries():
             if axes is not None:
                 ax = next(axes)
@@ -89,9 +97,10 @@ class Summary:
                 y=["PPV", "TPR", "F1"],
                 ylim=(0, 1),
                 ylabel="value",
-                title=model,
+                title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
+            subplot_ord += 1
 
 
 def load_rich_results(reval_dir):
