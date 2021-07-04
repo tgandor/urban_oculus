@@ -500,7 +500,8 @@ class DetectionResults:
             "PPV": PPV,
             "TPR": TPR,
             "EX": self.count_EX(t_iou, t_score),
-            "F1": 2 * PPV * TPR / (PPV + TPR),
+            "F1": 2 * PPV * TPR / (PPV + TPR + np.spacing(1)),
+            "T_c": t_score,
         }
 
 

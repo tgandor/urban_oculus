@@ -3,7 +3,27 @@ import glob
 import os
 import warnings
 
+import numpy as np
+import pandas as pd
+
 from uo.utils import load
+from .results import DetectionResults
+
+
+def summaries_by_tc(result_dir):
+    dr = DetectionResults(result_dir)
+    data = []
+    for t_score in np.arange(0.05, 1, 0.1):
+        data.append(dr.summary(t_score=t_score))
+    return pd.DataFrame(data=data)
+
+
+def get_summary(subdir, t_score=0):
+    dr = DetectionResults(subdir)
+    summary = dr.summary(t_score=t_score)
+    print(summary)
+    summary['subdir'] = os.path.basename(subdir)
+    return summary
 
 
 class Summary:
@@ -11,6 +31,9 @@ class Summary:
         self.reval_dir = reval_dir
         self.phys_dir = os.path.expanduser(reval_dir)
         self.subdirs = sorted(glob.glob(os.path.join(self.phys_dir, "*")))
+
+    def get_summaries(self):
+        return pd.DataFrame([get_summary(subdir) for subdir in self.subdirs])
 
 
 def load_rich_results(reval_dir):
