@@ -88,11 +88,13 @@ class Summary:
             df = summaries_by_tc(s)
             yield model, df
 
-    def plot_tc_summaries(self, axes=None, **kwargs):
+    def plot_tc_summaries(self, axes=None, order=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
-        for model, df in self.tc_summaries():
+        models = dict(self.tc_summaries())
+        for model in order if order else models.keys():
+            df = models[model]
             if axes is not None:
                 ax = next(axes)
                 kwargs["ax"] = ax
@@ -130,21 +132,22 @@ class GrandSummary:
 
     def save_q_summaries(self, excel=False):
         for df in self.q_summaries():
-            model = df['model'][0]
+            model = df["model"][0]
             if excel:
                 out = os.path.join(self.phys_dir, f"{model}.xlsx")
                 df.to_excel(out)
             else:
-                csv = os.path.join(self.phys_dir, f"{model}.csv")
+                out = os.path.join(self.phys_dir, f"{model}.csv")
                 df.to_csv(out)
             logger.info(f"Saved Q summaries to: {out}")
 
-    def plot_q_summaries(self, axes=None, **kwargs):
+    def plot_q_summaries(self, axes=None, order=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
-        for df in self.q_summaries():
-            model = df['model'][0]
+        models = {df["model"][0]: df for df in self.q_summaries()}
+        for model in order if order else models.keys():
+            df = models[model]
             if axes is not None:
                 ax = next(axes)
                 kwargs["ax"] = ax
