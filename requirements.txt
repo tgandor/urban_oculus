@@ -2,3 +2,4 @@ couchdb
 pandas
 torch
 torchvision
+openpyxl

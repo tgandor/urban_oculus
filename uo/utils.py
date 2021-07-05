@@ -8,7 +8,7 @@ from functools import wraps
 from itertools import islice
 
 
-def dirbasename(path: str):
+def dirbasename(path: str) -> str:
     if path.endswith('/'):
         return os.path.basename(os.path.dirname(path))
     return os.path.basename(path)
