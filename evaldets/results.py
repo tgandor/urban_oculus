@@ -121,6 +121,7 @@ class DetectionResults:
         self.names = Names.for_dataset(self.dataset)
         self._detections_by_image_id = None  # TODO: memoize
         self._detections_by_class = None
+        self._detections_by_score = None
         self._all_detections_by_class = None
         self.gt = load_gt(self.dataset, debug=self.debug)
 
@@ -188,6 +189,7 @@ class DetectionResults:
             if "iou" in detection:
                 del detection["iou"]
         self._all_detections_by_class = None
+        self._detections_by_score = None
 
     def _match_detections(self, iou_index=0):
         def _match_by_gt(img):
@@ -321,7 +323,11 @@ class DetectionResults:
     @property
     def detections_by_score(self):
         # sorted() is stable, so np.argsort(kind="mergesort") is no issue
-        return sorted(self.detections, key=itemgetter("score"), reverse=True)
+        if self._detections_by_score is None:
+            self._detections_by_score = sorted(
+                self.detections, key=itemgetter("score"), reverse=True
+            )
+        return self._detections_by_score
 
     def all_detections_by_class(self, name: str) -> list:
         if self._all_detections_by_class is None:
@@ -380,7 +386,6 @@ class DetectionResults:
         ).astype(float)
 
     def tp_sum_all(self, t_iou: float = 0.5):
-        """Return sum of """
         return np.cumsum(
             [
                 (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) < CROWD_ID_T)
@@ -403,6 +408,7 @@ class DetectionResults:
 
     def scores_all(self):
         return [det["score"] for det in self.detections_by_score]
+
     def pr_curve(self, category: str, t_iou: float = 0.5, t_score: float = None):
         """Return the precision-recall curve sampled at RECALL_THRS."""
         TP = self._tp_sum(category, t_iou)

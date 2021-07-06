@@ -51,6 +51,19 @@ def summaries_by_tc(result_dir):
     return pd.DataFrame(data=data)
 
 
+@cached_directory_data
+def tp_fp_ex_by_tc(result_dir):
+    dr = DetectionResults(result_dir)
+    return pd.DataFrame(
+        {
+            "T_c": dr.scores_all(),
+            "TP": dr.tp_sum_all(),
+            "FP": dr.fp_sum_all(),
+            "EX": dr.ex_sum_all(),
+        }
+    )
+
+
 def load_meta(subdir):
     results = os.path.join(subdir, "rich_results.json")
     return load(results)
@@ -88,7 +101,7 @@ class Summary:
             df = summaries_by_tc(s)
             yield model, df
 
-    def plot_tc_summaries(self, axes=None, order=None, **kwargs):
+    def plot_tc_summaries(self, axes=None, *, order=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
@@ -106,6 +119,54 @@ class Summary:
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
+            subplot_ord += 1
+
+    def tc_tp_fp_ex(self):
+        for s in self.subdirs:
+            model = self.metadata[s]["model"]
+            df = tp_fp_ex_by_tc(s)
+            yield model, df
+
+    def plot_tc_tp_fp_ex(
+        self, axes=None, *, stack=False, order=None, min_Tc=0.1, **kwargs
+    ):
+        if axes is not None:
+            axes = iter(axes.ravel())
+
+        if stack and "color" not in kwargs:
+            kwargs["color"] = ["#00aa00", "#ff0000", "#eeaa00"]
+
+        subplot_ord = ord("A")
+        models = dict(self.tc_tp_fp_ex())
+        yy = ["TP", "FP * (-1)", "TP+EX"] if stack else ["TP", "FP", "EX"]
+
+        for model in order if order else models.keys():
+            df = models[model]
+            if axes is not None:
+                ax = next(axes)
+                kwargs["ax"] = ax
+
+            if min_Tc > 0:
+                df = df[df.T_c > min_Tc]
+
+            if stack:
+                df = df.copy()
+                df["FP * (-1)"] = -df.FP
+                df["TP+EX"] = df.TP + df.EX
+
+            ax = df.plot(
+                x="T_c",
+                y=yy,
+                xlim=(1, min_Tc),
+                ylabel="count",
+                title=f"{chr(subplot_ord)}: {model}",
+                **kwargs,
+            )
+
+            if stack:
+                ax.axhline(0, color="gray", linestyle="dotted")
+            # nice, but fails with sharey=True
+            # ax.semilogy()
             subplot_ord += 1
 
 
