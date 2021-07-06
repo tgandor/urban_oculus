@@ -1,7 +1,8 @@
-from collections import defaultdict
 import glob
+import logging
 import os
 import time
+from collections import defaultdict
 from itertools import groupby
 from operator import itemgetter
 
@@ -13,6 +14,8 @@ from uo.utils import aspectize, load, logged, save
 
 from .metrics import interpolated_PPV
 from .names import Names
+
+logger = logging.getLogger()
 
 CROWD_ID_T = 10 ** 9
 """
@@ -33,8 +36,7 @@ Out[11]: '283'
 def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
     path = MetadataCatalog.get(dataset).json_file
     if not os.path.exists(path):
-        print(f"Missing annotations JSON: {path}")
-        exit()
+        raise ValueError(f"Missing annotations JSON: {path}")
     kwargs = {}
     if debug is not None:
         kwargs["debug"] = debug
@@ -64,8 +66,7 @@ def load_detections(file_or_dir, cache=True, debug=True):
     cache_file = os.path.join(dump_dir, "detections.pkl")
     if cache and os.path.exists(cache_file):
         detections = load(cache_file)
-        if debug:
-            print("Loaded cached detections:", cache_file)
+        logger.info(f"Loaded cached detections: {cache_file}")
         return detections, cache_file
 
     detections = load(det_filename)
@@ -157,7 +158,7 @@ class DetectionResults:
         cache_file = os.path.join(os.path.dirname(self.det_file), "coco.pkl.gz")
         if self.cache and os.path.exists(cache_file):
             self.coco = load(cache_file)
-            print(f"Loaded cached COCOEval: {cache_file}")
+            logger.info(f"Loaded cached COCOEval: {cache_file}")
             return
 
         self.dt = self.gt.loadRes(self.detections)
@@ -180,6 +181,7 @@ class DetectionResults:
         if self.iou_thresh is not None:
             self.coco.params.iouThrs = [self.iou_thresh]
 
+        logger.info(f"Running coco.evaluate()")
         self.coco.evaluate()
 
     def _reset_detections(self):
@@ -243,7 +245,7 @@ class DetectionResults:
             if "iscrowd" in d:
                 if d["iscrowd"]:
                     # you should never see this:
-                    print("Found crowd:", d)
+                    logger.warning(f"Found crowd detection: {d}")
                 del d["iscrowd"]
 
             if "category_id" in d:
@@ -300,7 +302,7 @@ class DetectionResults:
 
     def _save_cache(self):
         cache_file = os.path.join(os.path.dirname(self.det_file), "detections.pkl")
-        print("Saving detections to cache:", cache_file)
+        logger.info(f"Saving detections to cache: {cache_file}")
         save(self.detections, cache_file)
 
     def save_cocoeval(self):
@@ -557,6 +559,8 @@ def _main():
 
     if args.debug:
         aspectize(DetectionResults, logged)
+    if args.verbose or args.debug:
+        logging.basicConfig(level=logging.DEBUG)
 
     for detection_file in args.detection_files:
         res = DetectionResults(

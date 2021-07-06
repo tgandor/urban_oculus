@@ -147,8 +147,8 @@ def draw_box(visualizer, box, label):
     return draw_boxes(visualizer, [box], [label])
 
 
-def show_image_objects(image_id, *, show_ids=True, category=None, scale=1.0, v=0):
-    visualizer = visualizer_for_id(image_id, scale=scale)
+def show_image_objects(image_id, *, show_ids=True, category=None, q=None, scale=1.0, v=0):
+    visualizer = visualizer_for_id(image_id, q=q, scale=scale)
     objects = DSI.gt_on_img[image_id]
     if category:
         objects = [obj for obj in objects if obj["category"] == category]
@@ -196,9 +196,9 @@ def show_detection(
     det: dict, *, crop=False, crop_margin=5, mode="cv2", q=None, scale=1.0, v=0
 ):
     if crop is False:
-        return show_detections([det], mode=mode, scale=scale, v=v)
+        return show_detections([det], mode=mode, q=q, scale=scale, v=v)
 
-    v_img = show_detections([det], mode="ret", scale=scale, v=v)
+    v_img = show_detections([det], mode="ret", q=q, scale=scale, v=v)
     v_img = _crop_detection(v_img, det, crop_margin, scale)
 
     if mode == "mpl":

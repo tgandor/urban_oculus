@@ -259,6 +259,9 @@ def baseline_table(reval_dir, header=False):
         )
 
 
+def symlink_by_quality(reval_dir: str):
+    ...
+
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument("reval_dir")
