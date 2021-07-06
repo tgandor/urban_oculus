@@ -55,9 +55,11 @@ def load_detections(file_or_dir, cache=True, debug=True):
         det_filename = glob.glob(
             os.path.join(dump_dir, "coco_instances_results.json*")
         )[0]
-    else:
+    elif os.path.exists(file_or_dir):
         dump_dir = os.path.dirname(file_or_dir)
         det_filename = file_or_dir
+    else:
+        raise ValueError(f"File or directory not found: {file_or_dir}")
 
     cache_file = os.path.join(dump_dir, "detections.pkl")
     if cache and os.path.exists(cache_file):
@@ -377,6 +379,30 @@ class DetectionResults:
             ]
         ).astype(float)
 
+    def tp_sum_all(self, t_iou: float = 0.5):
+        """Return sum of """
+        return np.cumsum(
+            [
+                (det.get("iou", 0) >= t_iou and det.get("gt_id", 0) < CROWD_ID_T)
+                for det in self.detections_by_score
+            ]
+        ).astype(float)
+
+    def fp_sum_all(self, t_iou: float = 0.5):
+        return np.cumsum(
+            [
+                (det.get("iou", 0) < t_iou and det.get("gt_id", 0) < CROWD_ID_T)
+                for det in self.detections_by_score
+            ]
+        ).astype(float)
+
+    def ex_sum_all(self):
+        return np.cumsum(
+            [det.get("gt_id", 0) > CROWD_ID_T for det in self.detections_by_score]
+        ).astype(float)
+
+    def scores_all(self):
+        return [det["score"] for det in self.detections_by_score]
     def pr_curve(self, category: str, t_iou: float = 0.5, t_score: float = None):
         """Return the precision-recall curve sampled at RECALL_THRS."""
         TP = self._tp_sum(category, t_iou)
@@ -404,10 +430,14 @@ class DetectionResults:
         q = self.pr_curve(category, t_iou, t_score)
         return np.mean(q)
 
-    def mean_average_precision(self, t_iou: float = 0.5, t_score: float = None, rich=False):
+    def mean_average_precision(
+        self, t_iou: float = 0.5, t_score: float = None, rich=False
+    ):
         """mAP metric."""
         if not rich:
-            return np.mean([self.average_precision(c, t_iou, t_score) for c in self.names])
+            return np.mean(
+                [self.average_precision(c, t_iou, t_score) for c in self.names]
+            )
         aps = {c: self.average_precision(c, t_iou) for c in self.names}
         aps[f"mAP{t_iou}"] = np.mean(list(aps.values()))
         return aps

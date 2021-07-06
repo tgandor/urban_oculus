@@ -74,7 +74,7 @@ def load(path: str) -> dict:
         with gzip.open(path) as pkl:
             return pickle.load(pkl)
 
-    raise ValueError("unknown file type")
+    raise ValueError(f"unknown file type: {path}")
 
 
 def save(obj: dict, path: str) -> None:
@@ -94,7 +94,7 @@ def save(obj: dict, path: str) -> None:
         with gzip.open(path, 'wb') as pkl:
             return pickle.dump(obj, pkl)
 
-    raise ValueError("unknown file type")
+    raise ValueError(f"unknown file type: {path}")
 
 
 def top(iterable, n=10):
