@@ -1,35 +1,44 @@
 import argparse
-from functools import wraps
 import glob
 import itertools
 import logging
 import operator
 import os
 import warnings
+from datetime import datetime
+from functools import wraps
 
 import numpy as np
 import pandas as pd
-
 from uo.utils import dirbasename, load, save
-from .results import DetectionResults
+
+from .results import CROWD_ID_T, DetectionResults
 
 logger = logging.getLogger()
 
 
-def cached_directory_data(f):
-    @wraps(f)
-    def wrapper(directory, *args):
-        directory = os.path.expanduser(directory)
-        cache_file = os.path.join(directory, f"{f.__name__}.pkl.gz")
-        if os.path.exists(cache_file):
-            logger.info(f"Loading cached {f.__name__} results from {cache_file}.")
-            return load(cache_file)
-        value = f(directory, *args)
-        save(value, cache_file)
-        logger.info(f"Cached {f.__name__} results to {cache_file}.")
-        return value
+def cached_directory_data(f=None, *, compress=True):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(directory, *args):
+            directory = os.path.expanduser(directory)
+            cache_file = os.path.join(
+                directory, f"{f.__name__}.pkl{'.gz' if compress else ''}"
+            )
+            if os.path.exists(cache_file):
+                logger.info(f"Loading cached {f.__name__} results from {cache_file}.")
+                return load(cache_file)
+            value = f(directory, *args)
+            save(value, cache_file)
+            logger.info(f"Cached {f.__name__} results to {cache_file}.")
+            return value
 
-    return wrapper
+        return wrapper
+
+    if f is None:
+        return decorator
+
+    return decorator(f)
 
 
 SCORE_TRHS = np.arange(0.05, 1, 0.05)
@@ -68,6 +77,9 @@ def tp_fp_ex_by_tc(result_dir):
 
 def load_meta(subdir):
     results = os.path.join(subdir, "rich_results.json")
+    if not os.path.exists(results):
+        logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
+        results = os.path.join(subdir, "results.json")
     return load(results)
 
 
@@ -76,9 +88,9 @@ def subdir_summaries(top_dir):
     subdirs = sorted(glob.glob(os.path.join(top_dir, "*/")))
     data = []
     for subdir in subdirs:
+        logger.debug(f"{subdir=}")
         summary = get_summary(subdir)
         meta = load_meta(subdir)
-        # logger.debug(f"{meta=}")
         summary["model"] = meta["model"]
         summary["quality"] = meta["quality"]
         data.append(summary)
@@ -292,6 +304,39 @@ def _symlink_q() -> None:
     parser.add_argument("reval_dir")
     args = parser.parse_args()
     symlink_by_quality(args.reval_dir)
+
+
+def gt_for_single_run(subdir: str):
+    dr = DetectionResults(subdir)
+    meta = load_meta(subdir)
+    summary = pd.DataFrame(
+        [det for det in dr.detections if "gt_id" in det],
+        columns="image_id score iou gt_id category".split(),
+    )
+    summary["category"] = summary.category.astype("category")  # what a coincidence...
+    summary["model"] = meta["model"]
+    summary["quality"] = meta["quality"]
+    summary["crowd"] = summary.gt_id > CROWD_ID_T
+    return summary
+
+
+@cached_directory_data(compress=False)
+def gt_id_statistics(reval_dir: str):
+    try:
+        from multiprocess import Pool
+    except ImportError:
+        from multiprocessing import Pool
+
+    data = []
+
+    with Pool() as p:
+        for model_dir in _get_model_subdirectories(reval_dir):
+            logger.info(f"{datetime.now()}: {model_dir=}")
+            subdirs = sorted(glob.glob(os.path.join(model_dir, "*/")))
+            chunk = p.map(gt_for_single_run, subdirs)
+            data.extend(chunk)
+
+    return pd.concat(data, ignore_index=True)
 
 
 def _main():
