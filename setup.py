@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="urban_oculus",
-    version="0.0.6",
+    version="0.0.7",
     description="Misc utils for object detection and image compression.",
     packages=["evaldets", "jpeg", "uo"],
     install_requires=[
@@ -18,6 +18,7 @@ setup(
         console_scripts=[
             "view_detections=evaldets.visualization:_main",
             "view_gt=evaldets.visualization:_show_gt",
+            "symlink_q=evaldets.postprocess:_symlink_q",
         ]
     ),
 )

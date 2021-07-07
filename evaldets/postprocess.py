@@ -1,7 +1,9 @@
 import argparse
 from functools import wraps
 import glob
+import itertools
 import logging
+import operator
 import os
 import warnings
 
@@ -266,8 +268,30 @@ def baseline_table(reval_dir, header=False):
 def symlink_by_quality(reval_dir: str):
     reval_dir = os.path.abspath(os.path.expanduser(reval_dir))
     subdirs = _get_model_subdirectories(reval_dir)
-    dumps = [g for subdir in subdirs for g in glob.glob(os.path.join(subdir, "*/"))]
-    print(dumps)
+    dumps = [
+        os.path.abspath(g)
+        for subdir in subdirs
+        for g in glob.glob(os.path.join(subdir, "*/"))
+    ]
+    key = operator.itemgetter(slice(-3, None))
+    for k, v in itertools.groupby(sorted(dumps, key=key), key=key):
+        by_q_dir = os.path.join(reval_dir, f"quality_{k}")
+        os.makedirs(by_q_dir, exist_ok=True)
+        for dump in v:
+            symlink = os.path.join(by_q_dir, os.path.basename(dump))
+            target = os.path.relpath(dump, by_q_dir)
+            if os.path.exists(symlink):
+                logger.warn(f"Exists: {symlink}")
+                continue
+            logger.info(f"Symlinking {symlink} -> {target}")
+            os.symlink(target, symlink)
+
+
+def _symlink_q() -> None:
+    parser = argparse.ArgumentParser("symlink_q")
+    parser.add_argument("reval_dir")
+    args = parser.parse_args()
+    symlink_by_quality(args.reval_dir)
 
 
 def _main():
