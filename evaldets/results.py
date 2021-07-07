@@ -181,7 +181,7 @@ class DetectionResults:
         if self.iou_thresh is not None:
             self.coco.params.iouThrs = [self.iou_thresh]
 
-        logger.info(f"Running coco.evaluate()")
+        logger.info("Running coco.evaluate()")
         self.coco.evaluate()
 
     def _reset_detections(self):

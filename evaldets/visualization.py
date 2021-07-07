@@ -1,21 +1,24 @@
 import copy
+import logging
 from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
 from typing import Collection
 
 import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 from detectron2.data import MetadataCatalog
 from detectron2.data.catalog import Metadata
 from detectron2.structures import BoxMode
 from detectron2.utils.visualizer import Visualizer
-import matplotlib.pyplot as plt
-import numpy as np
-
-from uo.utils import is_notebook, load
 from jpeg import opencv_degrade_image
+from uo.utils import is_notebook, load
+
 from .names import Names
 from .results import DetectionResults
+
+logger = logging.getLogger()
 
 
 def _load_gt_objects(meta):
@@ -68,6 +71,7 @@ IMAGE_ROOT = Path(DSI.meta.image_root)
 
 def image_for_id(image_id, quality=101):
     path = IMAGE_ROOT / f"{image_id:012d}.jpg"
+    logger.debug(f"Reading image: {path}")
     img = cv2.imread(str(path))
     return img
 
@@ -75,6 +79,7 @@ def image_for_id(image_id, quality=101):
 def visualizer_for_id(image_id, q=None, **kwargs):
     img = image_for_id(image_id)
     if q is not None:
+        logger.debug(f"Compressing image to quality {q}")
         img = opencv_degrade_image(img, q)
     visualizer = Visualizer(img[:, :, ::-1], metadata=DSI.meta, **kwargs)
     return visualizer
@@ -102,8 +107,8 @@ def cv2_imshow(a, rgb=False):
         cv2.imshow("image", a)
         return cv2.waitKey(0)
 
-    from PIL import Image
     from IPython.display import display
+    from PIL import Image
 
     a = a.clip(0, 255).astype("uint8")
     # cv2 stores colors as BGR; convert to RGB

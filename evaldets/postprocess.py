@@ -83,6 +83,15 @@ def subdir_summaries(top_dir):
     return pd.DataFrame(data)
 
 
+def _get_model_subdirectories(top_dir):
+    return sorted(
+        subdir
+        for subdir in glob.glob(os.path.join(top_dir, "*/"))
+        if not dirbasename(subdir).startswith("baseline")
+        and not dirbasename(subdir).startswith("quality_")
+    )
+
+
 class Summary:
     """For baseline subdirectory."""
 
@@ -176,12 +185,7 @@ class GrandSummary:
     def __init__(self, reval_dir: str) -> None:
         self.reval_dir = reval_dir
         self.phys_dir = os.path.expanduser(reval_dir)
-        self.subdirs = sorted(
-            subdir
-            for subdir in glob.glob(os.path.join(self.phys_dir, "*/"))
-            if not dirbasename(subdir).startswith("baseline")
-        )
-        # logger.debug(f"{self.subdirs=}")
+        self.subdirs = _get_model_subdirectories(self.phys_dir)
 
     def __repr__(self):
         return f"GrandSummary('{self.reval_dir}')"
@@ -260,7 +264,11 @@ def baseline_table(reval_dir, header=False):
 
 
 def symlink_by_quality(reval_dir: str):
-    ...
+    reval_dir = os.path.abspath(os.path.expanduser(reval_dir))
+    subdirs = _get_model_subdirectories(reval_dir)
+    dumps = [g for subdir in subdirs for g in glob.glob(os.path.join(subdir, "*/"))]
+    print(dumps)
+
 
 def _main():
     parser = argparse.ArgumentParser()
