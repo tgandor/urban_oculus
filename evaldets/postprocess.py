@@ -136,7 +136,8 @@ class Summary:
                 kwargs["ax"] = ax
             df.plot(
                 x="T_c",
-                y=["PPV", "TPR", "F1"],
+                y=["TPR", "PPV", "F1"],
+                xlim=(1, 0),
                 ylim=(0, 1),
                 ylabel="value",
                 title=f"{chr(subplot_ord)}: {model}",
