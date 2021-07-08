@@ -8,6 +8,7 @@ import warnings
 from datetime import datetime
 from functools import wraps
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from uo.utils import dirbasename, load, save
@@ -154,6 +155,7 @@ class Summary:
     def plot_tc_tp_fp_ex(
         self, axes=None, *, stack=False, order=None, min_Tc=0.1, **kwargs
     ):
+        """Plot """
         if axes is not None:
             axes = iter(axes.ravel())
 
@@ -206,6 +208,7 @@ class GrandSummary:
         return f"GrandSummary('{self.reval_dir}')"
 
     def q_summaries(self):
+        """For each model subdirectory get a df with per-Q summary() results."""
         for s in self.subdirs:
             df = subdir_summaries(s)
             yield df
@@ -240,6 +243,26 @@ class GrandSummary:
                 **kwargs,
             )
             subplot_ord += 1
+
+
+def get_figure_axes(sharey=False):
+    """Produce a default figure with subplots for 9 models."""
+    fig, axes = plt.subplots(2, 5, sharey=sharey)
+    fig.set_figheight(6)
+    fig.set_figwidth(15)
+    return fig, axes
+
+
+def finish_plot(fig, axes):
+    """Layout and place legend for a figure created with get_figure_axes()."""
+    fig.tight_layout()
+    axes[1, 4].axis("off")
+    axes[1, 4].legend(
+        *axes[0, 0].get_legend_handles_labels(),
+        loc="lower right",
+        fontsize="x-large",
+        borderpad=2,
+    )
 
 
 def load_rich_results(reval_dir):
