@@ -330,6 +330,31 @@ def _symlink_q() -> None:
     symlink_by_quality(args.reval_dir)
 
 
+def _get_quality_subdirectories(top_dir):
+    return sorted(glob.glob(os.path.join(top_dir, "quality_*/")))
+
+
+def plot_book(reval_dir):
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    reval_dir = os.path.expanduser(reval_dir)
+    pdf_output = os.path.join(reval_dir, 'counts_vs_Tc_by_Q.pdf')
+    with PdfPages(pdf_output) as pdf:
+        for subdir in _get_quality_subdirectories(reval_dir):
+            s = Summary(subdir)
+            fig, axes = get_figure_axes(sharey=True)
+            s.plot_tc_tp_fp_ex(axes, stack=True, min_Tc=0.15)
+            finish_plot(fig, axes)
+            pdf.savefig(fig)
+
+
+def _plot_book() -> None:
+    parser = argparse.ArgumentParser("plot_book")
+    parser.add_argument("reval_dir")
+    args = parser.parse_args()
+    plot_book(args.reval_dir)
+
+
 def gt_for_single_run(subdir: str):
     dr = DetectionResults(subdir)
     meta = load_meta(subdir)
@@ -342,6 +367,18 @@ def gt_for_single_run(subdir: str):
     summary["quality"] = meta["quality"]
     summary["crowd"] = summary.gt_id > CROWD_ID_T
     return summary
+
+
+def warm_cache(glob_expr, function):
+    """Execute function for each subdirectory matching glob_expr."""
+    try:
+        from multiprocess import Pool
+    except ImportError:
+        from multiprocessing import Pool
+
+    dirs = glob.glob(os.path.expanduser(glob_expr))
+    with Pool() as p:
+        p.map(function, dirs)
 
 
 @cached_directory_data(compress=False)
