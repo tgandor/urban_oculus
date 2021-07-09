@@ -354,6 +354,7 @@ def plot_book(reval_dir, step=1):
             if ylim is None:
                 ylim = axes[0, 0].get_ylim()
             pdf.savefig(fig)
+            plt.close(fig)
 
 
 def _plot_book() -> None:
