@@ -357,6 +357,21 @@ def plot_book(reval_dir, step=1):
             plt.close(fig)
 
 
+def plot_PRF1_book(reval_dir, step=1):
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    reval_dir = os.path.expanduser(reval_dir)
+    pdf_output = os.path.join(reval_dir, "PRF1_vs_Tc_by_Q.pdf")
+    with PdfPages(pdf_output) as pdf:
+        for subdir in _get_quality_subdirectories(reval_dir)[::step]:
+            s = Summary(subdir)
+            fig, axes = get_figure_axes()
+            s.plot_tc_summaries(axes, order=DEFAULT_ORDER)
+            finish_plot(fig, axes, dirbasename(subdir))
+            pdf.savefig(fig)
+            plt.close(fig)
+
+
 def _plot_book() -> None:
     parser = argparse.ArgumentParser("plot_book")
     parser.add_argument("reval_dir")
