@@ -16,6 +16,7 @@ from uo.utils import dirbasename, load, save
 from .results import CROWD_ID_T, DetectionResults
 
 logger = logging.getLogger()
+DEFAULT_ORDER = "R101 R101_C4 R101_DC5 R101_FPN X101 R50 R50_C4 R50_DC5 R50_FPN".split()
 
 
 def cached_directory_data(f=None, *, compress=True):
@@ -245,17 +246,16 @@ class GrandSummary:
             subplot_ord += 1
 
 
-def get_figure_axes(sharey=False):
+def get_figure_axes(**kwargs):
     """Produce a default figure with subplots for 9 models."""
-    fig, axes = plt.subplots(2, 5, sharey=sharey)
+    fig, axes = plt.subplots(2, 5, **kwargs)
     fig.set_figheight(6)
     fig.set_figwidth(15)
     return fig, axes
 
 
-def finish_plot(fig, axes):
+def finish_plot(fig, axes, suptitle=None):
     """Layout and place legend for a figure created with get_figure_axes()."""
-    fig.tight_layout()
     axes[1, 4].axis("off")
     axes[1, 4].legend(
         *axes[0, 0].get_legend_handles_labels(),
@@ -263,6 +263,9 @@ def finish_plot(fig, axes):
         fontsize="x-large",
         borderpad=2,
     )
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
 
 
 def load_rich_results(reval_dir):
@@ -331,20 +334,25 @@ def _symlink_q() -> None:
 
 
 def _get_quality_subdirectories(top_dir):
-    return sorted(glob.glob(os.path.join(top_dir, "quality_*/")))
+    return sorted(glob.glob(os.path.join(top_dir, "quality_*/")), reverse=True)
 
 
-def plot_book(reval_dir):
+def plot_book(reval_dir, step=1):
     from matplotlib.backends.backend_pdf import PdfPages
 
     reval_dir = os.path.expanduser(reval_dir)
-    pdf_output = os.path.join(reval_dir, 'counts_vs_Tc_by_Q.pdf')
+    pdf_output = os.path.join(reval_dir, "counts_vs_Tc_by_Q.pdf")
+    ylim = None
     with PdfPages(pdf_output) as pdf:
-        for subdir in _get_quality_subdirectories(reval_dir):
+        for subdir in _get_quality_subdirectories(reval_dir)[::step]:
             s = Summary(subdir)
             fig, axes = get_figure_axes(sharey=True)
-            s.plot_tc_tp_fp_ex(axes, stack=True, min_Tc=0.15)
-            finish_plot(fig, axes)
+            if ylim:
+                axes[0, 0].set_ylim(ylim)
+            s.plot_tc_tp_fp_ex(axes, stack=True, min_Tc=0.15, order=DEFAULT_ORDER)
+            finish_plot(fig, axes, dirbasename(subdir))
+            if ylim is None:
+                ylim = axes[0, 0].get_ylim()
             pdf.savefig(fig)
 
 
@@ -367,18 +375,6 @@ def gt_for_single_run(subdir: str):
     summary["quality"] = meta["quality"]
     summary["crowd"] = summary.gt_id > CROWD_ID_T
     return summary
-
-
-def warm_cache(glob_expr, function):
-    """Execute function for each subdirectory matching glob_expr."""
-    try:
-        from multiprocess import Pool
-    except ImportError:
-        from multiprocessing import Pool
-
-    dirs = glob.glob(os.path.expanduser(glob_expr))
-    with Pool() as p:
-        p.map(function, dirs)
 
 
 @cached_directory_data(compress=False)

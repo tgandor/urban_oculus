@@ -1,10 +1,12 @@
 import bz2
+import glob
 import gzip
 import inspect
 import json
 import logging
 import os
 import pickle
+import zlib
 from functools import wraps
 from itertools import islice
 
@@ -102,11 +104,33 @@ def save(obj: dict, path: str) -> None:
         with open(path, "wb") as pkl:
             return pickle.dump(obj, pkl)
     if path.endswith(".pkl.gz"):
-        with gzip.open(path, "wb") as pkl:
-            return pickle.dump(obj, pkl)
+        try:
+            with gzip.open(path, "wb") as pkl:
+                return pickle.dump(obj, pkl)
+        except zlib.error:
+            logging.getLogger().exception(f"Error unzipping: {path}")
+            raise
 
     raise ValueError(f"unknown file type: {path}")
 
 
 def top(iterable, n=10):
     return list(islice(iterable, n))
+
+
+def warm_cache(glob_expr, function, sequential=False):
+    """Execute function for each subdirectory matching glob_expr."""
+    try:
+        from multiprocess import Pool
+    except ImportError:
+        from multiprocessing import Pool
+
+    dirs = sorted(glob.glob(os.path.expanduser(glob_expr)))
+
+    if sequential:
+        for dir in dirs:
+            function(dir)
+        return
+
+    with Pool() as p:
+        p.map(function, dirs)
