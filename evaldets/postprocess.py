@@ -349,7 +349,7 @@ def plot_book(reval_dir, step=1):
             fig, axes = get_figure_axes(sharey=True)
             if ylim:
                 axes[0, 0].set_ylim(ylim)
-            s.plot_tc_tp_fp_ex(axes, stack=True, min_Tc=0.15, order=DEFAULT_ORDER)
+            s.plot_tc_tp_fp_ex(axes, stack=True, min_Tc=0.15, order=DEFAULT_ORDER, legend=False)
             finish_plot(fig, axes, dirbasename(subdir))
             if ylim is None:
                 ylim = axes[0, 0].get_ylim()
@@ -366,7 +366,7 @@ def plot_PRF1_book(reval_dir, step=1):
         for subdir in _get_quality_subdirectories(reval_dir)[::step]:
             s = Summary(subdir)
             fig, axes = get_figure_axes()
-            s.plot_tc_summaries(axes, order=DEFAULT_ORDER)
+            s.plot_tc_summaries(axes, order=DEFAULT_ORDER, legend=False)
             finish_plot(fig, axes, dirbasename(subdir))
             pdf.savefig(fig)
             plt.close(fig)
