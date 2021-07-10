@@ -286,6 +286,24 @@ class GrandSummary:
             )
             subplot_ord += 1
 
+    def plot_ap_derivatives(self, axes=None, order=None, **kwargs):
+        if axes is not None:
+            axes = iter(axes.ravel())
+        subplot_ord = ord("A")
+        models = {df["model"][0]: df for df in self.ap_summaries()}
+        for model in order if order else models.keys():
+            df = models[model]
+            if axes is not None:
+                ax = next(axes)
+                kwargs["ax"] = ax
+            df.AP.rename("d(AP)/dQ").diff().rolling(5).mean().plot(
+                xlabel="quality",
+                ylabel="d(AP)/dQ ",
+                legend=False,
+                title=f"{chr(subplot_ord)}: {model}",
+                **kwargs,
+            )
+            subplot_ord += 1
 
 def get_figure_axes(**kwargs):
     """Produce a default figure with subplots for 9 models."""
@@ -324,7 +342,6 @@ def load_rich_results(reval_dir):
 def baseline_table(reval_dir, header=False):
     # previously as evaluate_coco.py side-effect
     metrics = load_rich_results(reval_dir)
-
     if header:
         # \newcommand\tsub[1]{\textsubscript{#1}}
         print(
