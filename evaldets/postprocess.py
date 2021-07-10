@@ -79,14 +79,17 @@ def tp_fp_ex_by_tc(result_dir):
 
 def load_meta(subdir):
     results = os.path.join(subdir, "rich_results.json")
-    if not os.path.exists(results):
-        logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
-        results = os.path.join(subdir, "results.json")
-    return load(results)
+    if os.path.exists(results):
+        return load(results)
+    logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
+    results = load(os.path.join(subdir, "results.json"))
+    results.update(results['results']['bbox'])
+    del results['results']
+    return results
 
 
 @cached_directory_data
-def subdir_summaries(top_dir):
+def subdir_summaries(top_dir: str):
     subdirs = sorted(glob.glob(os.path.join(top_dir, "*/")))
     data = []
     for subdir in subdirs:
@@ -96,6 +99,15 @@ def subdir_summaries(top_dir):
         summary["model"] = meta["model"]
         summary["quality"] = meta["quality"]
         data.append(summary)
+    return pd.DataFrame(data)
+
+
+def subdir_meta_df(model_dir: str) -> pd.DataFrame:
+    subdirs = sorted(glob.glob(os.path.join(model_dir, "*/")))
+    data = []
+    for subdir in subdirs:
+        meta = load_meta(subdir)
+        data.append(meta)
     return pd.DataFrame(data)
 
 
@@ -214,7 +226,15 @@ class GrandSummary:
             df = subdir_summaries(s)
             yield df
 
-    def save_q_summaries(self, excel=False):
+    def ap_summaries(self):
+        for s in self.subdirs:
+            df = subdir_meta_df(s)
+            for col in df.columns:
+                if col.startswith("AP"):
+                    df[col] = df[col] / 100
+            yield df
+
+    def save_q_summaries(self, excel=True, joint=True):
         for df in self.q_summaries():
             model = df["model"][0]
             if excel:
@@ -238,6 +258,26 @@ class GrandSummary:
             df.plot(
                 x="quality",
                 y=["PPV", "TPR", "F1"],
+                ylim=(0, 1),
+                ylabel="value",
+                title=f"{chr(subplot_ord)}: {model}",
+                **kwargs,
+            )
+            subplot_ord += 1
+
+    def plot_ap_summaries(self, axes=None, order=None, **kwargs):
+        if axes is not None:
+            axes = iter(axes.ravel())
+        subplot_ord = ord("A")
+        models = {df["model"][0]: df for df in self.ap_summaries()}
+        for model in order if order else models.keys():
+            df = models[model]
+            if axes is not None:
+                ax = next(axes)
+                kwargs["ax"] = ax
+            df.plot(
+                x="quality",
+                y=["AP50", "AP75", "AP"],
                 ylim=(0, 1),
                 ylabel="value",
                 title=f"{chr(subplot_ord)}: {model}",
@@ -349,7 +389,9 @@ def plot_book(reval_dir, step=1):
             fig, axes = get_figure_axes(sharey=True)
             if ylim:
                 axes[0, 0].set_ylim(ylim)
-            s.plot_tc_tp_fp_ex(axes, stack=True, min_Tc=0.15, order=DEFAULT_ORDER, legend=False)
+            s.plot_tc_tp_fp_ex(
+                axes, stack=True, min_Tc=0.15, order=DEFAULT_ORDER, legend=False
+            )
             finish_plot(fig, axes, dirbasename(subdir))
             if ylim is None:
                 ylim = axes[0, 0].get_ylim()
