@@ -305,6 +305,7 @@ class GrandSummary:
             )
             subplot_ord += 1
 
+
 def get_figure_axes(**kwargs):
     """Produce a default figure with subplots for 9 models."""
     fig, axes = plt.subplots(2, 5, **kwargs)
@@ -384,7 +385,7 @@ def symlink_by_quality(reval_dir: str):
             os.symlink(target, symlink)
 
 
-def _symlink_q() -> None:
+def symlink_q_main() -> None:
     parser = argparse.ArgumentParser("symlink_q")
     parser.add_argument("reval_dir")
     args = parser.parse_args()
@@ -472,7 +473,7 @@ def gt_id_statistics(reval_dir: str):
     return pd.concat(data, ignore_index=True)
 
 
-def _main():
+def baseline_table_main():
     parser = argparse.ArgumentParser()
     parser.add_argument("reval_dir")
     parser.add_argument("--header", "-g", action="store_true")
@@ -481,4 +482,4 @@ def _main():
 
 
 if __name__ == "__main__":
-    _main()
+    baseline_table_main()

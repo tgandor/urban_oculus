@@ -1,3 +1,4 @@
+import argparse
 import copy
 import logging
 from itertools import groupby
@@ -38,9 +39,9 @@ class DatasetIndex:
     def __init__(self, dataset="coco_2017_val") -> None:
         self.dataset = dataset
         self._meta = None
-        self._names = None
         self.gt_objects = None
         self.image_objects = None
+        self._id_to_object = None
 
     @property
     def meta(self):
@@ -152,9 +153,16 @@ def draw_box(visualizer, box, label):
     return draw_boxes(visualizer, [box], [label])
 
 
-def show_image_objects(image_id, *, show_ids=True, category=None, q=None, scale=1.0, v=0):
+def show_image_objects(
+    image_id, *, gt_id=None, show_ids=True, category=None, q=None, scale=2.0, v=0
+):
     visualizer = visualizer_for_id(image_id, q=q, scale=scale)
-    objects = DSI.gt_on_img[image_id]
+
+    if gt_id:
+        objects = [DSI.gt[gt_id]]
+    else:
+        objects = DSI.gt_on_img[image_id]
+
     if category:
         objects = [obj for obj in objects if obj["category"] == category]
 
@@ -173,6 +181,11 @@ def show_image_objects(image_id, *, show_ids=True, category=None, q=None, scale=
 
     v_img = draw_boxes(visualizer, boxes, labels)
     cv2_imshow(v_img, True)
+
+
+def show_single_gt(gt_id, *, show_ids=True, q=None, scale=2.0, v=0):
+    image_id = DSI.gt[gt_id]["image_id"]
+    show_image_objects(image_id, gt_id=gt_id, show_ids=show_ids, q=q, scale=scale, v=v)
 
 
 def _crop_detection(v_img: np.array, det: dict, margin=5, scale=1.0) -> np.array:
@@ -274,13 +287,14 @@ def browse_image(image_id: int):
     webbrowser.open_new_tab(url)
 
 
-def _main():
+def dt_main():
     import argparse
 
     parser = argparse.ArgumentParser("view_detections")
     parser.add_argument("detections_path")
     parser.add_argument("--category", "-c")
     parser.add_argument("--image-id", "-i", type=int)
+    parser.add_argument("--quality", "-q", type=int)
     parser.add_argument("--min-score", "-t", type=float)
     parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--verbose", "-v", action="store_true")
@@ -305,13 +319,12 @@ def _main():
         show_detections(dr, v=args.verbose, scale=args.scale, min_score=args.min_score)
 
 
-def _show_gt():
-    import argparse
-
+def gt_main():
     parser = argparse.ArgumentParser("show_gt")
     parser.add_argument("image_id", type=int)
+    parser.add_argument("--quality", "-q", type=int)
     parser.add_argument("--category", "-c")
-    parser.add_argument("--scale", "-s", type=float, default=1.0)
+    parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--www", "-w", action="store_true")
     args = parser.parse_args()
@@ -319,9 +332,33 @@ def _show_gt():
         browse_image(args.image_id)
     else:
         show_image_objects(
-            args.image_id, category=args.category, scale=args.scale, v=args.verbose
+            args.image_id,
+            category=args.category,
+            scale=args.scale,
+            v=args.verbose,
         )
 
 
+def one_gt_main():
+    parser = argparse.ArgumentParser("show_gt")
+    parser.add_argument("gt_id", type=int, nargs='+')
+    parser.add_argument("--quality", "-q", type=int)
+    parser.add_argument("--scale", "-s", type=float, default=2.0)
+    parser.add_argument("--crop", "-c", action="store_true")
+    parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--www", "-w", action="store_true")
+    args = parser.parse_args()
+    for gt_id in args.gt_id:
+        if args.www:
+            browse_image(DSI.gt[gt_id]["image_id"])
+        else:
+            show_single_gt(
+                gt_id,
+                scale=args.scale,
+                q=args.quality,
+                v=args.verbose,
+            )
+
+
 if __name__ == "__main__":
-    _main()
+    dt_main()
