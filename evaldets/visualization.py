@@ -270,7 +270,8 @@ def show_detections(
 
     k = itemgetter("image_id")
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
-        print("image_id =", image_id)
+        if not v:
+            print("image_id =", image_id)
 
         visualizer = visualizer_for_id(image_id, q, scale=scale)
 
