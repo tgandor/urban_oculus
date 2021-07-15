@@ -154,7 +154,15 @@ def draw_box(visualizer, box, label):
 
 
 def show_image_objects(
-    image_id, *, gt_id=None, show_ids=True, category=None, q=None, scale=2.0, v=0
+    image_id,
+    *,
+    mode="cv2",
+    gt_id=None,
+    show_ids=True,
+    category=None,
+    q=None,
+    scale=2.0,
+    v=0,
 ):
     visualizer = visualizer_for_id(image_id, q=q, scale=scale)
 
@@ -180,12 +188,39 @@ def show_image_objects(
         labels = [obj["category"] for obj in objects]
 
     v_img = draw_boxes(visualizer, boxes, labels)
+    if mode == "ret":
+        return v_img
     cv2_imshow(v_img, True)
 
 
-def show_single_gt(gt_id, *, show_ids=True, q=None, scale=2.0, v=0):
+def _crop_gt(v_img: np.array, gt: dict, margin=5, scale=1.0) -> np.array:
+    x0, y0, w, h = gt["bbox"]
+    x1, y1 = x0 + w, y0 + h
+
+    x0, y0, x1, y1 = (int(x * scale) for x in (x0, y0, x1, y1))
+
+    return v_img[
+        max(y0 - margin, 0) : y1 + margin,  # noqa
+        max(x0 - margin, 0) : x1 + margin,  # noqa
+        ...,
+    ]
+
+
+def show_single_gt(
+    gt_id, *, mode="cv2", crop=False, margin=5, show_ids=True, q=None, scale=2.0, v=0
+):
     image_id = DSI.gt[gt_id]["image_id"]
-    show_image_objects(image_id, gt_id=gt_id, show_ids=show_ids, q=q, scale=scale, v=v)
+    if not crop:
+        return show_image_objects(
+            image_id, gt_id=gt_id, show_ids=show_ids, q=q, scale=scale, v=v, mode=mode
+        )
+    v_img = show_image_objects(
+        image_id, gt_id=gt_id, show_ids=show_ids, q=q, scale=scale, v=v, mode="ret"
+    )
+    v_img = _crop_gt(v_img, DSI.gt[gt_id], scale=scale, margin=margin)
+    if mode == "ret":
+        return v_img
+    cv2_imshow(v_img, True)
 
 
 def _crop_detection(v_img: np.array, det: dict, margin=5, scale=1.0) -> np.array:
@@ -341,10 +376,11 @@ def gt_main():
 
 def one_gt_main():
     parser = argparse.ArgumentParser("show_gt")
-    parser.add_argument("gt_id", type=int, nargs='+')
+    parser.add_argument("gt_id", type=int, nargs="+")
     parser.add_argument("--quality", "-q", type=int)
     parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--crop", "-c", action="store_true")
+    parser.add_argument("--margin", "-m", type=int, default=5)
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--www", "-w", action="store_true")
     args = parser.parse_args()
@@ -357,6 +393,8 @@ def one_gt_main():
                 scale=args.scale,
                 q=args.quality,
                 v=args.verbose,
+                crop=args.crop,
+                margin=args.margin,
             )
 
 
