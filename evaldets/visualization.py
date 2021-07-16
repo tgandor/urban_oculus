@@ -167,7 +167,7 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
         cv2_imshow(v_img, True)
 
 
-def draw_boxes(visualizer, boxes, labels):
+def draw_boxes(visualizer, boxes, labels) -> np.array:
     boxes = BoxMode.convert(np.array(boxes), BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
     vis = visualizer.overlay_instances(boxes=boxes, labels=labels)
     return vis.get_image()
@@ -188,6 +188,7 @@ def show_image_objects(
     scale=2.0,
     v=0,
 ):
+    """Show GT objects for image."""
     visualizer = visualizer_for_id(image_id, q=q, scale=scale)
     if v:
         print(DSI.info[image_id])
@@ -296,7 +297,9 @@ def show_detections(
 
     k = itemgetter("image_id")
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
-        if not v:
+        if v:
+            print(DSI.info[image_id])
+        else:
             print("image_id =", image_id)
 
         visualizer = visualizer_for_id(image_id, q, scale=scale)
@@ -307,7 +310,7 @@ def show_detections(
         labels = []
         seen_gt = set()
 
-        for det in img_dets:
+        for i, det in enumerate(img_dets):
             if "gt_id" in det and det["gt_id"] not in seen_gt:
                 seen_gt.add(det["gt_id"])
                 gt = DSI.gt[det["gt_id"]]
@@ -331,7 +334,7 @@ def show_detections(
             labels.append(label)
 
             if v:
-                print(f'img={det["image_id"]}: {label} {gt_label}')
+                print(f'img={det["image_id"]} {i+1}: {label} {gt_label}')
 
         if gt_boxes:
             draw_boxes(visualizer, gt_boxes, gt_labels)
@@ -343,6 +346,10 @@ def show_detections(
             key = cv2_imshow(v_img, True)
             if key == ord("q"):
                 return
+            elif key == ord("s"):
+                save_file = f"{image_id}_Q{q}.png"
+                print(f"Saving to: {save_file}")
+                cv2.imwrite(save_file, v_img[..., ::-1])
         elif mode == "ret":
             return v_img
         else:
