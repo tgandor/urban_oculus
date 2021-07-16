@@ -4,7 +4,6 @@ import logging
 from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
-from typing import Collection
 
 import cv2
 import matplotlib.pyplot as plt
@@ -22,8 +21,15 @@ from .results import DetectionResults, CROWD_ID_T
 logger = logging.getLogger()
 
 
-def _load_gt_objects(meta):
-    data = load(meta.json_file)
+def _load_metadata(meta: Metadata) -> dict:
+    path = Path(meta.json_file)
+    if not path.exists():
+        path = Path("~").expanduser() / path
+    return load(str(path))
+
+
+def _load_gt_objects(meta: Metadata) -> dict[int, dict]:
+    data = _load_metadata(meta)
     names = Names(meta)
     anns = data["annotations"]
     result = {}
@@ -35,8 +41,8 @@ def _load_gt_objects(meta):
     return result
 
 
-def _load_image_info(meta):
-    data = load(meta.json_file)
+def _load_image_info(meta: Metadata) -> dict[int, dict]:
+    data = _load_metadata(meta)
     license_names = {lic["id"]: lic["name"] for lic in data["licenses"]}
     license_urls = {lic["id"]: lic["url"] for lic in data["licenses"]}
 
@@ -96,6 +102,8 @@ IMAGE_ROOT = Path(DSI.meta.image_root)
 
 def image_for_id(image_id, quality=101):
     path = IMAGE_ROOT / f"{image_id:012d}.jpg"
+    if not path.exists():
+        path = Path("~").expanduser() / path
     logger.debug(f"Reading image: {path}")
     img = cv2.imread(str(path))
     return img
@@ -167,13 +175,15 @@ def show_image_gt(d: dict, meta: Metadata, mpl=False, no_mask=True) -> None:
         cv2_imshow(v_img, True)
 
 
-def draw_boxes(visualizer, boxes, labels) -> np.array:
+def draw_boxes(
+    visualizer: Visualizer, boxes: list, labels: list[str], alpha=0.5
+) -> np.array:
     boxes = BoxMode.convert(np.array(boxes), BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
-    vis = visualizer.overlay_instances(boxes=boxes, labels=labels)
+    vis = visualizer.overlay_instances(boxes=boxes, labels=labels, alpha=alpha)
     return vis.get_image()
 
 
-def draw_box(visualizer, box, label):
+def draw_box(visualizer: Visualizer, box, label):
     return draw_boxes(visualizer, [box], [label])
 
 
@@ -297,7 +307,7 @@ def _cv2_save_lossless(filename, v_img, v=0):
 
 
 def show_detections(
-    dets: Collection[dict],
+    dets: list[dict],
     *,
     mode="cv2",
     q=None,
@@ -356,7 +366,7 @@ def show_detections(
                 print(f'img={det["image_id"]} {i+1}: {label} {gt_label}')
 
         if gt_boxes:
-            draw_boxes(visualizer, gt_boxes, gt_labels)
+            draw_boxes(visualizer, gt_boxes, gt_labels, alpha=0.65)
         v_img = draw_boxes(visualizer, boxes, labels)
 
         if mode == "mpl":
@@ -372,7 +382,9 @@ def show_detections(
         elif mode == "ret":
             return v_img
         elif mode == "save":
-            _cv2_save_lossless(f"by_image/{image_id}/{save_prefix}_Q{q}.png", v_img, v)
+            _cv2_save_lossless(
+                f"by_image/{image_id}/{save_prefix}_Q{q}_{image_id}.png", v_img, v
+            )
         else:
             raise ValueError(f"Invalid mode for show_detections(): {mode}")
 
