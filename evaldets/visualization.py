@@ -296,11 +296,13 @@ def show_detections(
         dets = [d for d in dets if d["score"] >= min_score]
 
     k = itemgetter("image_id")
+    idx = 0
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
+        idx += 1
         if v:
-            print(DSI.info[image_id])
+            print(idx, DSI.info[image_id])
         else:
-            print("image_id =", image_id)
+            print(idx, "image_id =", image_id)
 
         visualizer = visualizer_for_id(image_id, q, scale=scale)
 
@@ -343,9 +345,11 @@ def show_detections(
         if mode == "mpl":
             plt.imshow(v_img)
         elif mode == "cv2":
-            key = cv2_imshow(v_img, True)
+            key = cv2_imshow(v_img, True) & 0xff
             if key == ord("q"):
                 return
+            elif key == ord("x"):
+                exit()
             elif key == ord("s"):
                 save_file = f"{image_id}_Q{q}.png"
                 print(f"Saving to: {save_file}")
