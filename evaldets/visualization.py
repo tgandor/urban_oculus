@@ -37,16 +37,16 @@ def _load_gt_objects(meta):
 
 def _load_image_info(meta):
     data = load(meta.json_file)
-    license_names = {lic['id']: lic['name'] for lic in data['licenses']}
-    license_urls =  {lic['id']: lic['url'] for lic in data['licenses']}
+    license_names = {lic["id"]: lic["name"] for lic in data["licenses"]}
+    license_urls = {lic["id"]: lic["url"] for lic in data["licenses"]}
 
     images = {
-        img['id']: {
+        img["id"]: {
             **img,
-            'license': license_names[img['license']],
-            'license_url': license_urls[img['license']],
+            "license": license_names[img["license"]],
+            "license_url": license_urls[img["license"]],
         }
-        for img in data['images']
+        for img in data["images"]
     }
 
     return images
@@ -361,24 +361,22 @@ def dt_main():
     parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
-
+    kwargs = {
+        "v": args.verbose,
+        "scale": args.scale,
+        "min_score": args.min_score,
+        "q": args.quality,
+    }
     dr = DetectionResults(args.detections_path, debug=args.verbose)
     if args.image_id:
         detections = dr.detections_by_image_id(args.image_id)
         if args.category:
             detections = [d for d in detections if d["category"] == args.category]
-        show_detections(
-            detections, v=args.verbose, scale=args.scale, min_score=args.min_score
-        )
+        show_detections(detections, **kwargs)
     elif args.category:
-        show_detections(
-            dr.detections_by_class(args.category),
-            v=args.verbose,
-            scale=args.scale,
-            min_score=args.min_score,
-        )
+        show_detections(dr.detections_by_class(args.category), **kwargs)
     else:
-        show_detections(dr, v=args.verbose, scale=args.scale, min_score=args.min_score)
+        show_detections(dr, **kwargs)
 
 
 def gt_main():
