@@ -35,6 +35,23 @@ def _load_gt_objects(meta):
     return result
 
 
+def _load_image_info(meta):
+    data = load(meta.json_file)
+    license_names = {lic['id']: lic['name'] for lic in data['licenses']}
+    license_urls =  {lic['id']: lic['url'] for lic in data['licenses']}
+
+    images = {
+        img['id']: {
+            **img,
+            'license': license_names[img['license']],
+            'license_url': license_urls[img['license']],
+        }
+        for img in data['images']
+    }
+
+    return images
+
+
 class DatasetIndex:
     def __init__(self, dataset="coco_2017_val") -> None:
         self.dataset = dataset
@@ -42,6 +59,7 @@ class DatasetIndex:
         self.gt_objects = None
         self.image_objects = None
         self._id_to_object = None
+        self._image_info = None
 
     @property
     def meta(self):
@@ -54,6 +72,12 @@ class DatasetIndex:
         if self.gt_objects is None:
             self.gt_objects = _load_gt_objects(self.meta)
         return self.gt_objects
+
+    @property
+    def info(self):
+        if self._image_info is None:
+            self._image_info = _load_image_info(self.meta)
+        return self._image_info
 
     @property
     def gt_on_img(self):
@@ -165,6 +189,8 @@ def show_image_objects(
     v=0,
 ):
     visualizer = visualizer_for_id(image_id, q=q, scale=scale)
+    if v:
+        print(DSI.info[image_id])
 
     if gt_id:
         objects = [DSI.gt[gt_id]]
