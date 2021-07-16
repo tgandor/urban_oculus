@@ -367,7 +367,7 @@ def dt_main():
     import argparse
 
     parser = argparse.ArgumentParser("view_detections")
-    parser.add_argument("detections_path")
+    parser.add_argument("detections_path", nargs='+')
     parser.add_argument("--category", "-c")
     parser.add_argument("--image-id", "-i", type=int)
     parser.add_argument("--quality", "-q", type=int)
@@ -375,22 +375,24 @@ def dt_main():
     parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
-    dr = DetectionResults(args.detections_path, debug=args.verbose)
-    kwargs = {
-        "v": args.verbose,
-        "scale": args.scale,
-        "min_score": args.min_score,
-        "q": args.quality or dr.quality,
-    }
-    if args.image_id:
-        detections = dr.detections_by_image_id(args.image_id)
-        if args.category:
-            detections = [d for d in detections if d["category"] == args.category]
-        show_detections(detections, **kwargs)
-    elif args.category:
-        show_detections(dr.detections_by_class(args.category), **kwargs)
-    else:
-        show_detections(dr, **kwargs)
+    for detections_path in args.detections_path:
+        print('Loading:', detections_path)
+        dr = DetectionResults(detections_path, debug=args.verbose)
+        kwargs = {
+            "v": args.verbose,
+            "scale": args.scale,
+            "min_score": args.min_score,
+            "q": args.quality or dr.quality,
+        }
+        if args.image_id:
+            detections = dr.detections_by_image_id(args.image_id)
+            if args.category:
+                detections = [d for d in detections if d["category"] == args.category]
+            show_detections(detections, **kwargs)
+        elif args.category:
+            show_detections(dr.detections_by_class(args.category), **kwargs)
+        else:
+            show_detections(dr, **kwargs)
 
 
 def gt_main():
