@@ -289,8 +289,23 @@ def show_detection(
         return v_img
 
 
+def _cv2_save_lossless(filename, v_img, v=0):
+    Path(filename).parent.mkdir(exist_ok=True, parents=True)
+    if v:
+        print(f"Saving to: {filename}")
+    cv2.imwrite(filename, v_img[..., ::-1])
+
+
 def show_detections(
-    dets: Collection[dict], *, mode="cv2", q=None, scale=1.0, min_score=None, v=0
+    dets: Collection[dict],
+    *,
+    mode="cv2",
+    q=None,
+    scale=1.0,
+    min_score=None,
+    v=0,
+    save_prefix="",
+    limit=None,
 ):
     if min_score:
         dets = [d for d in dets if d["score"] >= min_score]
@@ -299,6 +314,8 @@ def show_detections(
     idx = 0
     for image_id, img_dets in groupby(sorted(dets, key=k), key=k):
         idx += 1
+        if limit and idx > limit:
+            break
         if v:
             print(idx, DSI.info[image_id])
         else:
@@ -345,17 +362,17 @@ def show_detections(
         if mode == "mpl":
             plt.imshow(v_img)
         elif mode == "cv2":
-            key = cv2_imshow(v_img, True) & 0xff
+            key = cv2_imshow(v_img, True) & 0xFF
             if key == ord("q"):
                 return
             elif key == ord("x"):
                 exit()
             elif key == ord("s"):
-                save_file = f"{image_id}_Q{q}.png"
-                print(f"Saving to: {save_file}")
-                cv2.imwrite(save_file, v_img[..., ::-1])
+                _cv2_save_lossless(f"{image_id}_Q{q}.png", v_img, v)
         elif mode == "ret":
             return v_img
+        elif mode == "save":
+            _cv2_save_lossless(f"by_image/{image_id}/{save_prefix}_Q{q}.png", v_img, v)
         else:
             raise ValueError(f"Invalid mode for show_detections(): {mode}")
 
@@ -371,22 +388,27 @@ def dt_main():
     import argparse
 
     parser = argparse.ArgumentParser("view_detections")
-    parser.add_argument("detections_path", nargs='+')
+    parser.add_argument("detections_path", nargs="+")
     parser.add_argument("--category", "-c")
     parser.add_argument("--image-id", "-i", type=int)
     parser.add_argument("--quality", "-q", type=int)
     parser.add_argument("--min-score", "-t", type=float)
     parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--save", "-S", action="store_true")
+    parser.add_argument("--limit", type=int)
     args = parser.parse_args()
     for detections_path in args.detections_path:
-        print('Loading:', detections_path)
+        print("Loading:", detections_path)
         dr = DetectionResults(detections_path, debug=args.verbose)
         kwargs = {
             "v": args.verbose,
             "scale": args.scale,
             "min_score": args.min_score,
             "q": args.quality or dr.quality,
+            "save_prefix": dr.model,
+            "mode": "save" if args.save else "cv2",
+            "limit": args.limit,
         }
         if args.image_id:
             detections = dr.detections_by_image_id(args.image_id)

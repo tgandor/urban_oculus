@@ -114,6 +114,7 @@ class DetectionResults:
         self.gt_match = gt_match
         self.input = det_file_or_dir
         self.rounding = rounding
+        self._metadata = None
         # COCOeval params
         self.area_rng = area_rng
         self.iou_thresh = iou_thresh
@@ -153,6 +154,11 @@ class DetectionResults:
             self.cache_loaded = True
         else:
             self.cache_loaded = False
+
+    def _ensure_meta(self):
+        if self._metadata is None:
+            meta_path = os.path.join(os.path.dirname(self.det_file), 'results.json')
+            self._metadata = load(meta_path)
 
     def _evaluate(self):
         cache_file = os.path.join(os.path.dirname(self.det_file), "coco.pkl.gz")
@@ -324,9 +330,13 @@ class DetectionResults:
 
     @property
     def quality(self):
-        meta_path = os.path.join(os.path.dirname(self.det_file), 'results.json')
-        metadata = load(meta_path)
-        return metadata['quality']
+        self._ensure_meta()
+        return self._metadata['quality']
+
+    @property
+    def model(self):
+        self._ensure_meta()
+        return self._metadata['model']
 
     @property
     def detections_by_score(self):
