@@ -323,6 +323,12 @@ class DetectionResults:
         return "<DetectionResult>"
 
     @property
+    def quality(self):
+        meta_path = os.path.join(os.path.dirname(self.det_file), 'results.json')
+        metadata = load(meta_path)
+        return metadata['quality']
+
+    @property
     def detections_by_score(self):
         # sorted() is stable, so np.argsort(kind="mergesort") is no issue
         if self._detections_by_score is None:

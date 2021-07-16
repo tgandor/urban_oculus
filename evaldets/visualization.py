@@ -17,7 +17,7 @@ from jpeg import opencv_degrade_image
 from uo.utils import is_notebook, load
 
 from .names import Names
-from .results import DetectionResults
+from .results import DetectionResults, CROWD_ID_T
 
 logger = logging.getLogger()
 
@@ -318,7 +318,14 @@ def show_detections(
                 gt_label = "(no GT)"
 
             bbox = [det[k] for k in "xywh"]
-            iou_label = f'J={det.get("iou", 0)*100:.1f}' if "gt_id" in det else "(FP)"
+
+            if "gt_id" not in det:
+                iou_label = "(FP)"
+            elif det["gt_id"] > CROWD_ID_T:
+                iou_label = f"EX={det['iou']:.1f}"
+            else:
+                iou_label = f"J={det['iou']*100:.1f}"
+
             label = f'{det["category"]} {det["score"]*100:.1f} {iou_label}'
             boxes.append(bbox)
             labels.append(label)
@@ -361,13 +368,13 @@ def dt_main():
     parser.add_argument("--scale", "-s", type=float, default=2.0)
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
+    dr = DetectionResults(args.detections_path, debug=args.verbose)
     kwargs = {
         "v": args.verbose,
         "scale": args.scale,
         "min_score": args.min_score,
-        "q": args.quality,
+        "q": args.quality or dr.quality,
     }
-    dr = DetectionResults(args.detections_path, debug=args.verbose)
     if args.image_id:
         detections = dr.detections_by_image_id(args.image_id)
         if args.category:
