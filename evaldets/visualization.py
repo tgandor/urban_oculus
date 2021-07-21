@@ -381,12 +381,12 @@ def show_detections(
             elif key == ord("x"):
                 exit()
             elif key == ord("s"):
-                _cv2_save_lossless(f"{image_id}_Q{q}.png", v_img, v)
+                _cv2_save_lossless(f"{image_id}_Q={q:02d}.png", v_img, v)
         elif mode == "ret":
             return v_img
         elif mode == "save":
             _cv2_save_lossless(
-                f"by_image/{image_id}/{save_prefix}_Q{q}_{image_id}.png", v_img, v
+                f"by_image/{image_id}/{save_prefix}_Q={q:02d}_id={image_id}.png", v_img, v
             )
         else:
             raise ValueError(f"Invalid mode for show_detections(): {mode}")
