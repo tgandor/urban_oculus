@@ -247,6 +247,9 @@ def show_single_gt(
     gt_id, *, mode="cv2", crop=False, margin=5, show_ids=True, q=None, scale=2.0, v=0
 ):
     image_id = DSI.gt[gt_id]["image_id"]
+    if v:
+        print(f"GT {gt_id} img {image_id}")
+
     if not crop:
         return show_image_objects(
             image_id, gt_id=gt_id, show_ids=show_ids, q=q, scale=scale, v=v, mode=mode
