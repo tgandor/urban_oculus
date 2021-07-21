@@ -36,6 +36,8 @@ Out[11]: '283'
 def load_gt(dataset="coco_2017_val", del_mask=True, debug=None):
     path = MetadataCatalog.get(dataset).json_file
     if not os.path.exists(path):
+        path = os.path.expanduser(f"~/{path}")
+    if not os.path.exists(path):
         raise ValueError(f"Missing annotations JSON: {path}")
     kwargs = {}
     if debug is not None:
