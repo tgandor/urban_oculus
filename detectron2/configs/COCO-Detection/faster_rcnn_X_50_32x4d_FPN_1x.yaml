@@ -1,5 +1,7 @@
 _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
+  BACKBONE:
+    FREEZE_AT: 0  # need to be from scratch?
   MASK_ON: False
   WEIGHTS: ""  # need to be from scratch?
   PIXEL_STD: [57.375, 57.120, 58.395]
@@ -8,3 +10,5 @@ MODEL:
     NUM_GROUPS: 32
     WIDTH_PER_GROUP: 4
     DEPTH: 50
+SOLVER:
+  IMS_PER_BATCH: 1
