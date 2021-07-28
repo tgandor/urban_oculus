@@ -1,4 +1,3 @@
-
 # This is taken from:
 # https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5
 # i.e.
@@ -10,7 +9,7 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultTrainer
 from detectron2 import model_zoo
-from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.data import DatasetCatalog, MetadataCatalog, Metadata
 import random
 import time
 
@@ -31,7 +30,7 @@ import json
 from detectron2.structures import BoxMode
 
 
-def get_balloon_dicts(img_dir):
+def get_balloon_dicts(img_dir: str) -> list[dict]:
     json_file = os.path.join(img_dir, "via_region_data.json")
     with open(json_file) as f:
         imgs_anns = json.load(f)
@@ -70,78 +69,115 @@ def get_balloon_dicts(img_dir):
     return dataset_dicts
 
 
-if not os.path.isdir('balloon/'):
-    print('download and decompress the data first:')
-    print('https://github.com/matterport/Mask_RCNN/releases/download/v2.1/balloon_dataset.zip')
-    exit()
+def register_dataset() -> Metadata:
+    if not os.path.isdir("balloon/"):
+        print("download and decompress the data first:")
+        print(
+            "https://github.com/matterport/Mask_RCNN/releases/download/v2.1/balloon_dataset.zip"
+        )
+        exit()
 
-# registering the dataset in detectron:
+    # registering the dataset in detectron:
 
-print('registering dataset...')
+    print("registering dataset...")
 
-for d in ["train", "val"]:
-    DatasetCatalog.register(
-        "balloon_" + d, lambda d=d: get_balloon_dicts("balloon/" + d))
-    MetadataCatalog.get("balloon_" + d).set(thing_classes=["balloon"])
-balloon_metadata = MetadataCatalog.get("balloon_train")
+    for d in ["train", "val"]:
+        DatasetCatalog.register(
+            "balloon_" + d, lambda d=d: get_balloon_dicts("balloon/" + d)
+        )
+        MetadataCatalog.get("balloon_" + d).set(thing_classes=["balloon"])
+
+    return MetadataCatalog.get("balloon_train")
+
 
 # training:
 
-print('preparing training...')
 
+def train():
+    print("preparing training...")
 
-cfg = get_cfg()
-cfg.merge_from_file(model_zoo.get_config_file(
-    "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"))
-cfg.DATASETS.TRAIN = ("balloon_train",)
-cfg.DATASETS.TEST = ()
-cfg.DATALOADER.NUM_WORKERS = 2
-cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(
-    "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")  # Let training initialize from model zoo
-cfg.SOLVER.IMS_PER_BATCH = 2
-cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-# 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
-cfg.SOLVER.MAX_ITER = 300
-# faster, and good enough for this toy dataset (default: 512)
-cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
-cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # only has one class (ballon)
+    cfg = get_cfg()
+    cfg.merge_from_file(
+        model_zoo.get_config_file(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
+        )
+    )
+    cfg.DATASETS.TRAIN = ("balloon_train",)
+    cfg.DATASETS.TEST = ()
+    cfg.DATALOADER.NUM_WORKERS = 2
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(
+        "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
+    )  # Let training initialize from model zoo
+    cfg.SOLVER.IMS_PER_BATCH = 2
+    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
+    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 300
+    # faster, and good enough for this toy dataset (default: 512)
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # only has one class (ballon)
 
-os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-trainer = DefaultTrainer(cfg)
-trainer.resume_or_load(resume=False)
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+    trainer = DefaultTrainer(cfg)
+    trainer.resume_or_load(resume=False)
 
-print('this is a good moment to launch Tensorboard..., namely:')
-print(f'tensorboard --logdir {cfg.OUTPUT_DIR}')
-print('starting in 5 s ...')
-time.sleep(5)
+    print("this is a good moment to launch Tensorboard..., namely:")
+    print(f"tensorboard --logdir {cfg.OUTPUT_DIR}")
+    print("starting in 5 s ...")
+    time.sleep(5)
 
-trainer.train()
+    trainer.train()
+
 
 # testing:
 
-print('testing...')
-
 
 def cv2_imshow(image):
-    cv2.imshow('result', image)
-    cv2.waitKey(0)
+    cv2.imshow("result", image)
+    res = cv2.waitKey(0)
+    if res & 0xFF == ord("q"):
+        exit()
 
 
-cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
-# set the testing threshold for this model
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
-cfg.DATASETS.TEST = ("balloon_val", )
-predictor = DefaultPredictor(cfg)
-
-dataset_dicts = get_balloon_dicts("balloon/val")
-for d in random.sample(dataset_dicts, 3):
-    im = cv2.imread(d["file_name"])
-    outputs = predictor(im)
-    v = Visualizer(
-        im[:, :, ::-1],
-        metadata=balloon_metadata,
-        scale=0.8,
-        instance_mode=ColorMode.IMAGE_BW   # remove the colors of unsegmented pixels
+def testing():
+    print("testing...")
+    cfg = get_cfg()
+    cfg.merge_from_file(
+        model_zoo.get_config_file(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
+        )
     )
-    v = v.draw_instance_predictions(outputs["instances"].to("cpu"))
-    cv2_imshow(v.get_image()[:, :, ::-1])
+    balloon_metadata = MetadataCatalog.get("balloon_train")
+
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # now needed again...
+    # set the testing threshold for this model
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
+    cfg.DATASETS.TEST = ("balloon_val",)
+    predictor = DefaultPredictor(cfg)
+
+    dataset_dicts = get_balloon_dicts("balloon/val")
+    for d in random.sample(dataset_dicts, 3):
+        im = cv2.imread(d["file_name"])
+        outputs = predictor(im)
+        v = Visualizer(
+            im[:, :, ::-1],
+            metadata=balloon_metadata,
+            scale=0.8,
+            instance_mode=ColorMode.IMAGE_BW,  # remove the colors of unsegmented pixels
+        )
+        v = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+        try:
+            cv2_imshow(v.get_image()[:, :, ::-1])
+        except:
+            print(d["file_name"])
+            print(outputs["instances"].to("cpu"))
+
+
+def main():
+    register_dataset()
+    train()
+    testing()
+
+
+if __name__ == "__main__":
+    main()
