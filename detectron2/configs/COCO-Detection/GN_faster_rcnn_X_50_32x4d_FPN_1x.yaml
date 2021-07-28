@@ -1,0 +1,25 @@
+# https://github.com/facebookresearch/detectron2/issues/914
+# Training from scratch on custom dataset
+# cfg.MODEL.BACKBONE.FREEZE_AT = 0
+# cfg.MODEL.RESNETS.NORM = "GN"
+# cfg.MODEL.FPN.NORM = "GN"
+# cfg.MODEL.ROI_BOX_HEAD = "GN"
+
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  BACKBONE:
+    FREEZE_AT: 0
+  # ROI_BOX_HEAD: "GN"
+  FPN:
+    NORM: "GN"
+  MASK_ON: False
+  WEIGHTS: ""  # need to be from scratch
+  PIXEL_STD: [57.375, 57.120, 58.395]
+  RESNETS:
+    NORM: "GN"
+    STRIDE_IN_1X1: False  # this is a C2 model
+    NUM_GROUPS: 32
+    WIDTH_PER_GROUP: 4
+    DEPTH: 50
+SOLVER:
+  IMS_PER_BATCH: 1

@@ -110,7 +110,8 @@ def train():
     )  # Let training initialize from model zoo
     cfg.SOLVER.IMS_PER_BATCH = 2
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    # 300 iterations seems good enough for this toy dataset;
+    # you may need to train longer for a practical dataset
     cfg.SOLVER.MAX_ITER = 300
     # faster, and good enough for this toy dataset (default: 512)
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
@@ -168,7 +169,7 @@ def testing():
         v = v.draw_instance_predictions(outputs["instances"].to("cpu"))
         try:
             cv2_imshow(v.get_image()[:, :, ::-1])
-        except:
+        except:  # noqa
             print(d["file_name"])
             print(outputs["instances"].to("cpu"))
 
