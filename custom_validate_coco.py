@@ -6,7 +6,6 @@ import json
 
 import torch
 
-import detectron2.model_zoo
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
