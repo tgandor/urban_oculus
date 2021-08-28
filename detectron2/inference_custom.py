@@ -12,15 +12,16 @@ def _parse_cli():
     parser = argparse.ArgumentParser()
     parser.add_argument("config")
     parser.add_argument("weights")
-    parser.add_argument("--threshold", "-t", type=float)
+    parser.add_argument("--threshold", "-t", type=float)  # D2 default: 0.05
+    parser.add_argument("--delay", "-d", type=int, default=0)
     parser.add_argument("images", nargs=argparse.REMAINDER)
     return parser.parse_args()
 
 
-def cv2_imshow(image):
+def cv2_imshow(image, delay=0):
     cv2.namedWindow("result", cv2.WINDOW_NORMAL)
     cv2.imshow("result", image)
-    res = cv2.waitKey(0)
+    res = cv2.waitKey(delay)
     if res & 0xFF == ord("q"):
         exit()
 
@@ -41,8 +42,8 @@ def main():
     metadata = MetadataCatalog.get('coco_2017_val')
     names = metadata.get("thing_classes", None)
 
-    for image in args.images:
-        print(image)
+    for img_idx, image in enumerate(args.images):
+        print(img_idx+1, image)
         im = cv2.imread(image)
         outputs = predictor(im)
 
@@ -79,7 +80,7 @@ def main():
             )
 
         v = v.draw_instance_predictions(predictions)
-        cv2_imshow(v.get_image()[..., ::-1])
+        cv2_imshow(v.get_image()[..., ::-1], args.delay)
 
 
 if __name__ == "__main__":
