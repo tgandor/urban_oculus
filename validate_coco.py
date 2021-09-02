@@ -27,16 +27,16 @@ MODEL_ZOO_CONFIGS = {
     "R101": "COCO-Detection/retinanet_R_101_FPN_3x.yaml",
 }
 
-if not os.path.exists("datasets"):
-    print("Copy or symlink datasets/ directory here. (please)")
-    exit()
-
-if not os.path.exists("val2017.zip"):
-    print("Copy or symlink val2017.zip file here. (please)")
-    exit()
-
 
 def validate_quality(q, model, min_score):
+    if not os.path.exists("datasets"):
+        print("Copy or symlink datasets/ directory here. (please)")
+        exit()
+
+    if not os.path.exists("val2017.zip"):
+        print("Copy or symlink val2017.zip file here. (please)")
+        exit()
+
     model_config = MODEL_ZOO_CONFIGS[model]
     out_folder = f"evaluator_dump_{model}_{q:03d}"
     os.system("unzip -o val2017.zip -d datasets/coco/")
