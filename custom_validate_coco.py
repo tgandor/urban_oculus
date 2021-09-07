@@ -15,16 +15,16 @@ from detectron2.engine import DefaultPredictor
 logging.basicConfig(level=logging.INFO)
 
 
-if not os.path.exists("datasets"):
-    print("Copy or symlink datasets/ directory here. (please)")
-    exit()
-
-if not os.path.exists("val2017.zip"):
-    print("Copy or symlink val2017.zip file here. (please)")
-    exit()
-
-
 def validate_quality(q, model: str, config, weights, min_score):
+
+    if not os.path.exists("datasets"):
+        print("Copy or symlink datasets/ directory here. (please)")
+        exit()
+
+    if not os.path.exists("val2017.zip"):
+        print("Copy or symlink val2017.zip file here. (please)")
+        exit()
+
     out_folder = f"evaluator_dump_{model}_{q:03d}"
     os.system("unzip -o val2017.zip -d datasets/coco/")
     if 1 <= q <= 100:
@@ -57,17 +57,21 @@ def validate_quality(q, model: str, config, weights, min_score):
         )
 
 
-if __name__ == "__main__":
+def _parse_cli():
     parser = argparse.ArgumentParser()
     parser.add_argument("model")
     parser.add_argument("config")
     parser.add_argument("weights")
     parser.add_argument("--device", "-d", type=int, help="select CUDA device")
-    parser.add_argument("--minQ", type=int, help="min JPEG quality", default=1)
-    parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=100)
+    # default: single -- no degradation!
+    parser.add_argument("--minQ", "-m", type=int, help="min JPEG quality", default=101)
+    parser.add_argument("--maxQ", "-M", type=int, help="min JPEG quality", default=101)
     parser.add_argument("--min-score", "-t", type=float, help="score threshold for objects", default=0.05)
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def main():
+    args = _parse_cli()
     if args.device is not None:
         print(
             f"Current device {torch.cuda.current_device()} ({torch.cuda.get_device_name()})"
@@ -79,3 +83,7 @@ if __name__ == "__main__":
 
     for i in range(args.minQ, args.maxQ + 1):
         validate_quality(i, args.model, args.config, args.weights, args.min_score)
+
+
+if __name__ == "__main__":
+    main()
