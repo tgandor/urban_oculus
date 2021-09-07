@@ -14,7 +14,8 @@ def _parse_cli():
     parser.add_argument("weights")
     parser.add_argument("--threshold", "-t", type=float)  # D2 default: 0.05
     parser.add_argument("--delay", "-d", type=int, default=0)
-    parser.add_argument("images", nargs=argparse.REMAINDER)
+    parser.add_argument("--category", "-c")
+    parser.add_argument("images", nargs="+")
     return parser.parse_args()
 
 
@@ -64,6 +65,8 @@ def main():
             else None
         )
 
+        found_category = args.category is None
+
         for box, score, class_id in zip(boxes, scores, classes):
             x0, y0, x1, y1 = box
             print(
@@ -78,6 +81,12 @@ def main():
                     "score": float(score),
                 }
             )
+            if names[class_id] == args.category:
+                found_category = True
+
+        if not found_category:
+            print(f"No {args.category} found on {image} (not showing)")
+            continue
 
         v = v.draw_instance_predictions(predictions)
         cv2_imshow(v.get_image()[..., ::-1], args.delay)
