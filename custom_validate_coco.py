@@ -65,7 +65,8 @@ def _parse_cli():
     parser.add_argument("--device", "-d", type=int, help="select CUDA device")
     # default: single -- no degradation!
     parser.add_argument("--minQ", "-m", type=int, help="min JPEG quality", default=101)
-    parser.add_argument("--maxQ", "-M", type=int, help="min JPEG quality", default=101)
+    parser.add_argument("--maxQ", "-M", type=int, help="max JPEG quality", default=101)
+    parser.add_argument("--stepQ", "-S", type=int, help="JPEG quality step", default=1)
     parser.add_argument("--min-score", "-t", type=float, help="score threshold for objects", default=0.05)
     return parser.parse_args()
 
@@ -81,7 +82,7 @@ def main():
             f"New device {torch.cuda.current_device()} ({torch.cuda.get_device_name()})"
         )
 
-    for i in range(args.minQ, args.maxQ + 1):
+    for i in range(args.minQ, args.maxQ + 1, args.stepQ):
         validate_quality(i, args.model, args.config, args.weights, args.min_score)
 
 
