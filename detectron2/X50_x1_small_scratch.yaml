@@ -1,4 +1,4 @@
-_BASE_: "../Base-RCNN-FPN.yaml"
+_BASE_: "configs/Base-RCNN-FPN.yaml"
 MODEL:
   BACKBONE:
     FREEZE_AT: 0  # need to be from scratch?
