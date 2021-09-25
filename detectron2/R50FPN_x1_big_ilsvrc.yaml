@@ -1,0 +1,9 @@
+_BASE_: "configs/Base-RCNN-FPN.yaml"
+OUTPUT_DIR: "./R50FPN_x1_big_ilsvrc_Q20"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+SOLVER:
+  IMS_PER_BATCH: 8
