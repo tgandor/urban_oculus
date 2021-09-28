@@ -15,7 +15,9 @@ from detectron2.engine import DefaultPredictor
 logging.basicConfig(level=logging.INFO)
 
 
-def validate_quality(q, model: str, config, weights, min_score):
+def validate_quality(
+    q, model: str, config: str, weights: str, min_score: str, verbose: bool = False
+):
 
     if not os.path.exists("datasets"):
         print("Copy or symlink datasets/ directory here. (please)")
@@ -26,11 +28,11 @@ def validate_quality(q, model: str, config, weights, min_score):
         exit()
 
     out_folder = f"evaluator_dump_{model}_{q:03d}"
-    os.system("unzip -o val2017.zip -d datasets/coco/")
+    os.system(f"unzip {'' if verbose else '-q'} -o val2017.zip -d datasets/coco/")
     if 1 <= q <= 100:
-        os.system(f"mogrify -verbose -quality {q} datasets/coco/val2017/*")
+        os.system(f"mogrify {'-verbose' if verbose else ''} -quality {q} datasets/coco/val2017/*")
     else:
-        print('Skipping quality degradation.')
+        print("Skipping quality degradation.")
     cfg = get_cfg()
     cfg.merge_from_file(config)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = min_score  # set threshold for R-CNN
@@ -67,7 +69,14 @@ def _parse_cli():
     parser.add_argument("--minQ", "-m", type=int, help="min JPEG quality", default=101)
     parser.add_argument("--maxQ", "-M", type=int, help="max JPEG quality", default=101)
     parser.add_argument("--stepQ", "-S", type=int, help="JPEG quality step", default=1)
-    parser.add_argument("--min-score", "-t", type=float, help="score threshold for objects", default=0.05)
+    parser.add_argument(
+        "--min-score",
+        "-t",
+        type=float,
+        help="score threshold for objects",
+        default=0.05,
+    )
+    parser.add_argument("--verbose", "-v", action="store_true")
     return parser.parse_args()
 
 
@@ -83,7 +92,7 @@ def main():
         )
 
     for i in range(args.minQ, args.maxQ + 1, args.stepQ):
-        validate_quality(i, args.model, args.config, args.weights, args.min_score)
+        validate_quality(i, args.model, args.config, args.weights, args.min_score, args.verbose)
 
 
 if __name__ == "__main__":

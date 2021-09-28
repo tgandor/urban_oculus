@@ -20,6 +20,6 @@
 for dir in "$@" ; do
     base=`basename $dir /`
     echo `date` $base
-    time python ../custom_validate_coco.py $base $base.yaml $base/model_final.pth -m 5 -M 101 -S 7
+    time python ../custom_validate_coco.py $base $base/config.yaml $base/model_final.pth -m 5 -M 101 -S 7
     echo `date` "$base done."
 done
