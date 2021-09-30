@@ -4,6 +4,7 @@ import itertools
 import logging
 import operator
 import os
+import sys
 import warnings
 from datetime import datetime
 from functools import wraps
@@ -340,8 +341,20 @@ def load_rich_results(reval_dir):
     return rich_results
 
 
+def _table_xcol(metrics):
+    if len(set(d["quality"] for d in metrics)) == 1:
+        return "{model} & "
+    return "{quality} & "
+
+
+def _table_xhdr(metrics):
+    if len(set(d["quality"] for d in metrics)) == 1:
+        return "Model & "
+    return "Q & "
+
+
 TABLE_FORMAT = (
-    "{model} & {AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f}"
+    "{AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f}"
     " & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,}"
 )
 
@@ -350,16 +363,18 @@ def baseline_table(reval_dir, header=False):
     # previously as evaluate_coco.py side-effect
     metrics = load_rich_results(reval_dir)
     hav_ex = all("ex" in d for d in metrics)
-    fmt = TABLE_FORMAT + (r" & {ex:,} \\" if hav_ex else r" \\")
+    x_col = _table_xcol(metrics)
+    fmt = x_col + TABLE_FORMAT + (r" & {ex:} \\" if hav_ex else r" \\")
     if not hav_ex:
         print("Warning: no EX column available.")
 
     if header:
         # \newcommand\tsub[1]{\textsubscript{#1}}
         print(
-            r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
+            _table_xhdr(metrics)
+            + r"AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
             r" & AP\tsub{s} & TPR & PPV & TP & FP",
-            end=""
+            end="",
         )
         print(r" & EX \\" if hav_ex else r" \\")
         print(r"\midrule")
@@ -369,6 +384,39 @@ def baseline_table(reval_dir, header=False):
         row["recall"] *= 100
         row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
         print(fmt.format(**row))
+
+
+TABLE_FORMAT_PRF = "{recall:.1f} & {precision:.1f} & {tp:} & {fp:}"
+
+
+def baseline_table_prf(reval_dir, header=False):
+    # previously as evaluate_coco.py side-effect
+    metrics = load_rich_results(reval_dir)
+    hav_ex = all("ex" in d for d in metrics)
+    x_col = _table_xcol(metrics)
+    fmt = x_col + TABLE_FORMAT_PRF + (r" & {ex} \\" if hav_ex else r" \\")
+
+    if not hav_ex:
+        print("Warning: no EX column available.")
+        head = "\\begin{tabular}{lccrr} \\toprule"
+        headings = r"TPR & PPV & TP & FP \\ \midrule"
+    else:
+        head = "\\begin{tabular}{lccrrr}\n\\toprule"
+        headings = r"TPR & PPV & TP & FP & EX \\ \midrule"
+
+    if header:
+        # \newcommand\tsub[1]{\textsubscript{#1}}
+        print(head, file=sys.stderr)
+        print(_table_xhdr(metrics) + headings, file=sys.stderr, flush=True)
+
+    for row in metrics:
+        row["precision"] *= 100
+        row["recall"] *= 100
+        row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
+        print(fmt.format(**row))
+
+    if header:
+        print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
 
 
 def symlink_by_quality(reval_dir: str):
@@ -483,10 +531,27 @@ def gt_id_statistics(reval_dir: str):
 
 def baseline_table_main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("reval_dir")
-    parser.add_argument("--header", "-g", action="store_true")
+    parser.add_argument(
+        "reval_dir",
+        help="directory to summare with DIRECT evaluator_dump_(...) subdirectories",
+    )
+    parser.add_argument(
+        "--header", "-g", action="store_true", help="print LaTeX table header"
+    )
+    parser.add_argument(
+        "--prf", action="store_true", help="print only T_c dependent metrics."
+    )
+    parser.add_argument(
+        "--ap", action="store_true", help="print only T_c independent metrics."
+    )
+
     args = parser.parse_args()
-    baseline_table(args.reval_dir, args.header)
+    if args.prf:
+        baseline_table_prf(args.reval_dir, args.header)
+    elif args.ap:
+        baseline_table(args.reval_dir, args.header)
+    else:
+        baseline_table(args.reval_dir, args.header)
 
 
 if __name__ == "__main__":
