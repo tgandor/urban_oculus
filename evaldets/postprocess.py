@@ -370,13 +370,14 @@ def baseline_table(reval_dir, header=False):
     hav_ex = all("ex" in d for d in metrics)
     x_col = _table_xcol(metrics)
     fmt = x_col + TABLE_FORMAT + (r" & {ex:} \\" if hav_ex else r" \\")
-
+    kind = 'tabular' if len(metrics) <= 20 else 'longtable'
+    cols = 'lccccccccrr' if len(metrics) <= 20 else 'l|ccc|ccc|cc|rr'
     if not hav_ex:
         print("Warning: no EX column available.")
-        head = "\\begin{tabular}{lccccccccrr} \\toprule"
+        head = "\\begin{" + kind + "}{" + cols + "} \\toprule"
         headings = TABLE_HEADINGS + r" \\ \midrule"
     else:
-        head = "\\begin{tabular}{lccccccccrrr} \\toprule"
+        head = "\\begin{" + kind + "}{" + cols + "r} \\toprule"
         headings = TABLE_HEADINGS + r" & EX \\ \midrule"
 
     if header:
@@ -391,7 +392,7 @@ def baseline_table(reval_dir, header=False):
         print(fmt.format(**row))
 
     if header:
-        print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
+        print("\\bottomrule\n\\end{" + kind + "}", file=sys.stderr)
 
 
 TABLE_FORMAT_PRF = "{recall:.1f} & {precision:.1f} & {tp:} & {fp:}"
