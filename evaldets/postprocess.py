@@ -392,6 +392,7 @@ def baseline_table(reval_dir, header=False):
         print(fmt.format(**row))
 
     if header:
+        sys.stdout.flush()
         print("\\bottomrule\n\\end{" + kind + "}", file=sys.stderr)
 
 
