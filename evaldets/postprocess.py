@@ -358,6 +358,11 @@ TABLE_FORMAT = (
     " & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,}"
 )
 
+TABLE_HEADINGS = (
+    r"AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
+    r" & AP\tsub{s} & TPR & PPV & TP & FP"
+)
+
 
 def baseline_table(reval_dir, header=False):
     # previously as evaluate_coco.py side-effect
@@ -365,25 +370,28 @@ def baseline_table(reval_dir, header=False):
     hav_ex = all("ex" in d for d in metrics)
     x_col = _table_xcol(metrics)
     fmt = x_col + TABLE_FORMAT + (r" & {ex:} \\" if hav_ex else r" \\")
+
     if not hav_ex:
         print("Warning: no EX column available.")
+        head = "\\begin{tabular}{lccccccccrr} \\toprule"
+        headings = TABLE_HEADINGS + r" \\ \midrule"
+    else:
+        head = "\\begin{tabular}{lccccccccrrr} \\toprule"
+        headings = TABLE_HEADINGS + r" & EX \\ \midrule"
 
     if header:
         # \newcommand\tsub[1]{\textsubscript{#1}}
-        print(
-            _table_xhdr(metrics)
-            + r"AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
-            r" & AP\tsub{s} & TPR & PPV & TP & FP",
-            end="",
-        )
-        print(r" & EX \\" if hav_ex else r" \\")
-        print(r"\midrule")
+        print(head, file=sys.stderr)
+        print(_table_xhdr(metrics) + headings, file=sys.stderr, flush=True)
 
     for row in metrics:
         row["precision"] *= 100
         row["recall"] *= 100
         row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
         print(fmt.format(**row))
+
+    if header:
+        print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
 
 
 TABLE_FORMAT_PRF = "{recall:.1f} & {precision:.1f} & {tp:} & {fp:}"
@@ -412,6 +420,33 @@ def baseline_table_prf(reval_dir, header=False):
     for row in metrics:
         row["precision"] *= 100
         row["recall"] *= 100
+        row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
+        print(fmt.format(**row))
+
+    if header:
+        print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
+
+
+TABLE_FORMAT_AP = (
+    r"{AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f} & {APs:.1f} \\"
+)
+
+
+def baseline_table_ap(reval_dir, header=False):
+    # previously as evaluate_coco.py side-effect
+    metrics = load_rich_results(reval_dir)
+    x_col = _table_xcol(metrics)
+    fmt = x_col + TABLE_FORMAT_AP
+
+    head = "\\begin{tabular}{lcccccc}\n\\toprule"
+    headings = r"AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m} & AP\tsub{s} \\ \midrule"
+
+    if header:
+        # \newcommand\tsub[1]{\textsubscript{#1}}
+        print(head, file=sys.stderr)
+        print(_table_xhdr(metrics) + headings, file=sys.stderr, flush=True)
+
+    for row in metrics:
         row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
         print(fmt.format(**row))
 
@@ -549,7 +584,7 @@ def baseline_table_main():
     if args.prf:
         baseline_table_prf(args.reval_dir, args.header)
     elif args.ap:
-        baseline_table(args.reval_dir, args.header)
+        baseline_table_ap(args.reval_dir, args.header)
     else:
         baseline_table(args.reval_dir, args.header)
 
