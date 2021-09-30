@@ -2,14 +2,16 @@ from setuptools import setup
 
 setup(
     name="urban_oculus",
-    version="0.0.9",
+    version="0.1.0",
     description="Misc utils for object detection and image compression.",
     packages=["evaldets", "jpeg", "uo"],
-    install_requires=[
-        "opencv-python",
-        "pycocotools @ git+https://github.com/tgandor/cocoapi.git@reformatted#egg=pycocotools&subdirectory=PythonAPI",  # noqa
-        "detectron2 @ git+https://github.com/facebookresearch/detectron2.git@bf358d61a8949d0cc815249f3f1d4b1d45cd11a0",  # noqa
-    ],
+    extras_require={
+        "detectron": [
+            "opencv-python",
+            "pycocotools @ git+https://github.com/tgandor/cocoapi.git@reformatted#egg=pycocotools&subdirectory=PythonAPI",  # noqa
+            "detectron2 @ git+https://github.com/facebookresearch/detectron2.git@bf358d61a8949d0cc815249f3f1d4b1d45cd11a0",  # noqa
+        ]
+    },
     dependency_links=[
         "git+https://github.com/tgandor/cocoapi.git@reformatted#egg=pycocotools&subdirectory=PythonAPI",  # noqa
         "git+https://github.com/facebookresearch/detectron2.git@bf358d61a8949d0cc815249f3f1d4b1d45cd11a0",  # noqa
