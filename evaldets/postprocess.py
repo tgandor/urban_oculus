@@ -83,8 +83,8 @@ def load_meta(subdir):
         return load(results)
     logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
     results = load(os.path.join(subdir, "results.json"))
-    results.update(results['results']['bbox'])
-    del results['results']
+    results.update(results["results"]["bbox"])
+    del results["results"]
     return results
 
 
@@ -168,7 +168,7 @@ class Summary:
     def plot_tc_tp_fp_ex(
         self, axes=None, *, stack=False, order=None, min_Tc=0.1, **kwargs
     ):
-        """Plot """
+        """Plot"""
         if axes is not None:
             axes = iter(axes.ravel())
 
@@ -340,27 +340,35 @@ def load_rich_results(reval_dir):
     return rich_results
 
 
+TABLE_FORMAT = (
+    "{model} & {AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f}"
+    " & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,}"
+)
+
+
 def baseline_table(reval_dir, header=False):
     # previously as evaluate_coco.py side-effect
     metrics = load_rich_results(reval_dir)
+    hav_ex = all("ex" in d for d in metrics)
+    fmt = TABLE_FORMAT + (r" & {ex:,} \\" if hav_ex else r" \\")
+    if not hav_ex:
+        print("Warning: no EX column available.")
+
     if header:
         # \newcommand\tsub[1]{\textsubscript{#1}}
         print(
             r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
-            r" & AP\tsub{s} & TPR & PPV & TP & FP & EX \\"
+            r" & AP\tsub{s} & TPR & PPV & TP & FP",
+            end=""
         )
+        print(r" & EX \\" if hav_ex else r" \\")
         print(r"\midrule")
 
     for row in metrics:
         row["precision"] *= 100
         row["recall"] *= 100
         row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
-        print(
-            "{model} & {AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f}"
-            r" & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,} & {ex:,} \\".format(
-                **row
-            )
-        )
+        print(fmt.format(**row))
 
 
 def symlink_by_quality(reval_dir: str):
