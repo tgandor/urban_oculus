@@ -355,7 +355,7 @@ def _table_xhdr(metrics):
 
 TABLE_FORMAT = (
     "{AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f}"
-    " & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp:,} & {fp:,}"
+    " & {APs:.1f} & {recall:.1f} & {precision:.1f} & {tp} & {fp}"
 )
 
 TABLE_HEADINGS = (
