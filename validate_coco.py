@@ -16,6 +16,10 @@ from detectron2.engine import DefaultPredictor
 logging.basicConfig(level=logging.INFO)
 
 MODEL_ZOO_CONFIGS = {
+    # FRCNN
+    "R50_C4x1": "COCO-Detection/faster_rcnn_R_50_C4_1x.yaml",
+    "R50_DC5x1": "COCO-Detection/faster_rcnn_R_50_DC5_1x.yaml",
+    "R50_FPNx1": "COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml",
     "R50_C4": "COCO-Detection/faster_rcnn_R_50_C4_3x.yaml",
     "R50_DC5": "COCO-Detection/faster_rcnn_R_50_DC5_3x.yaml",
     "R50_FPN": "COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml",
@@ -23,8 +27,26 @@ MODEL_ZOO_CONFIGS = {
     "R101_DC5": "COCO-Detection/faster_rcnn_R_101_DC5_3x.yaml",
     "R101_FPN": "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
     "X101": "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml",
+    # Retina
     "R50": "COCO-Detection/retinanet_R_50_FPN_3x.yaml",
+    "R50x1": "COCO-Detection/retinanet_R_50_FPN_1x.yaml",
     "R101": "COCO-Detection/retinanet_R_101_FPN_3x.yaml",
+    # Mask R-CNN
+    "MR50_C4x1": "COCO-InstanceSegmentation/mask_rcnn_R_50_C4_1x.yaml",
+    "MR50_DC5x1": "COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_1x.yaml",
+    "MR50_FPNx1": "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml",
+    "MR50_C4": "COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml",
+    "MR50_DC5": "COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_3x.yaml",
+    "MR50_FPN": "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml",
+    "MR101_C4": "COCO-InstanceSegmentation/mask_rcnn_R_101_C4_3x.yaml",
+    "MR101_DC5": "COCO-InstanceSegmentation/mask_rcnn_R_101_DC5_3x.yaml",
+    "MR101_FPN": "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
+    "MX101": "COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml",
+    # Keypoints (person)
+    "KR50_FPNx1": "COCO-Keypoints/keypoint_rcnn_R_50_FPN_1x.yaml",
+    "KR50_FPN": "COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml",
+    "KR101_FPN": "COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
+    "KX101": "COCO-Keypoints/keypoint_rcnn_X_101_32x8d_FPN_3x.yaml",
 }
 
 
@@ -39,9 +61,13 @@ def validate_quality(q, model, min_score):
 
     model_config = MODEL_ZOO_CONFIGS[model]
     out_folder = f"evaluator_dump_{model}_{q:03d}"
+    pre_unzip = time.time()
     os.system("unzip -o val2017.zip -d datasets/coco/")
+    post_unzip = time.time()
+    print(f"Done unzipping in {post_unzip-pre_unzip:.1f} s")
     if 1 <= q <= 100:
         os.system(f"mogrify -verbose -quality {q} datasets/coco/val2017/*")
+        print(f"Done degrading in {time.time()-post_unzip:.1f} s")
     else:
         print('Skipping quality degradation.')
     cfg = get_cfg()
@@ -74,9 +100,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("model")
     parser.add_argument("--device", "-d", type=int, help="select CUDA device")
-    parser.add_argument("--minQ", type=int, help="min JPEG quality", default=1)
-    parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=100)
-    parser.add_argument("--min-score", "-t", type=float, help="score threshold for objects", default=0.5)
+    parser.add_argument("--minQ", type=int, help="min JPEG quality", default=101)
+    parser.add_argument("--maxQ", type=int, help="min JPEG quality", default=101)
+    parser.add_argument("--stepQ", "-S", type=int, help="JPEG quality step", default=1)
+    parser.add_argument(
+        "--min-score",
+        "-t",
+        type=float,
+        help="score threshold for objects",
+        default=0.05,
+    )
     args = parser.parse_args()
 
     if args.device is not None:
