@@ -28,11 +28,19 @@ def validate_quality(
         exit()
 
     out_folder = f"evaluator_dump_{model}_{q:03d}"
+    pre_unzip = time.time()
     os.system(f"unzip {'' if verbose else '-q'} -o val2017.zip -d datasets/coco/")
+    post_unzip = time.time()
     if 1 <= q <= 100:
         os.system(f"mogrify {'-verbose' if verbose else ''} -quality {q} datasets/coco/val2017/*")
     else:
         print("Skipping quality degradation.")
+    post_degrade = time.time()
+    print(
+        f"Done unzipping in {post_unzip-pre_unzip:.1f} s, "
+        f"degrading in {post_degrade-post_unzip:.1f} s, "
+        f"total {post_degrade-pre_unzip:.1f} s"
+    )
     cfg = get_cfg()
     cfg.merge_from_file(config)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = min_score  # set threshold for R-CNN
@@ -92,7 +100,9 @@ def main():
         )
 
     for i in range(args.minQ, args.maxQ + 1, args.stepQ):
-        validate_quality(i, args.model, args.config, args.weights, args.min_score, args.verbose)
+        validate_quality(
+            i, args.model, args.config, args.weights, args.min_score, args.verbose
+        )
 
 
 if __name__ == "__main__":
