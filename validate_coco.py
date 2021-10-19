@@ -126,5 +126,5 @@ if __name__ == "__main__":
             f"New device {torch.cuda.current_device()} ({torch.cuda.get_device_name()})"
         )
 
-    for i in range(args.minQ, args.maxQ + 1):
+    for i in range(args.minQ, args.maxQ + 1, args.stepQ):
         validate_quality(i, args.model, args.min_score)
