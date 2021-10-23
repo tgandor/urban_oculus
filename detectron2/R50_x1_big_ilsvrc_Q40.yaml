@@ -1,5 +1,5 @@
 _BASE_: "configs/Base-RetinaNet.yaml"
-OUTPUT_DIR: "./R50_x1_big_ilsvrc"
+OUTPUT_DIR: "./R50_x1_big_ilsvrc_Q40"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   RESNETS:
