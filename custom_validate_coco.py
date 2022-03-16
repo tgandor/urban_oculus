@@ -28,6 +28,10 @@ def validate_quality(
         exit()
 
     out_folder = f"evaluator_dump_{model}_{q:03d}"
+    if os.path.exists(out_folder):
+        print(f"{out_folder} exists. Skipping validation of {model} at Q={q}.")
+        return
+
     pre_unzip = time.time()
     os.system(f"unzip {'' if verbose else '-q'} -o val2017.zip -d datasets/coco/")
     post_unzip = time.time()
