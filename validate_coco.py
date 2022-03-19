@@ -1,8 +1,9 @@
 import argparse
+import datetime
+import json
 import logging
 import os
 import time
-import json
 
 import torch
 
@@ -50,7 +51,7 @@ MODEL_ZOO_CONFIGS = {
 }
 
 
-def validate_quality(q, model, min_score):
+def validate_quality(q, model, min_score, verbose=False):
     if not os.path.exists("datasets"):
         print("Copy or symlink datasets/ directory here. (please)")
         exit()
@@ -62,10 +63,14 @@ def validate_quality(q, model, min_score):
     model_config = MODEL_ZOO_CONFIGS[model]
     out_folder = f"evaluator_dump_{model}_{q:03d}"
     pre_unzip = time.time()
-    os.system("unzip -o val2017.zip -d datasets/coco/")
+    if not verbose:
+        print("Unzipping...")
+    os.system(f"unzip {'' if verbose else '-q'} -o val2017.zip -d datasets/coco/")
     post_unzip = time.time()
     if 1 <= q <= 100:
-        os.system(f"mogrify -verbose -quality {q} datasets/coco/val2017/*")
+        if not verbose:
+            print(f"Degrading to Q={q} (mogrify)...")
+        os.system(f"mogrify {'-verbose' if verbose else ''} -quality {q} datasets/coco/val2017/*")
     else:
         print("Skipping quality degradation.")
     post_degrade = time.time()
@@ -115,6 +120,7 @@ if __name__ == "__main__":
         help="score threshold for objects",
         default=0.05,
     )
+    parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     if args.device is not None:
@@ -127,4 +133,6 @@ if __name__ == "__main__":
         )
 
     for i in range(args.minQ, args.maxQ + 1, args.stepQ):
-        validate_quality(i, args.model, args.min_score)
+        validate_quality(i, args.model, args.min_score, args.verbose)
+
+    print(datetime.datetime.now(), "Done")

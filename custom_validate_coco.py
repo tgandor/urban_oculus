@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import logging
 import os
 import time
@@ -33,9 +34,13 @@ def validate_quality(
         return
 
     pre_unzip = time.time()
+    if not verbose:
+        print("Unzipping...")
     os.system(f"unzip {'' if verbose else '-q'} -o val2017.zip -d datasets/coco/")
     post_unzip = time.time()
     if 1 <= q <= 100:
+        if not verbose:
+            print(f"Degrading to Q={q} (mogrify)...")
         os.system(f"mogrify {'-verbose' if verbose else ''} -quality {q} datasets/coco/val2017/*")
     else:
         print("Skipping quality degradation.")
@@ -107,6 +112,7 @@ def main():
         validate_quality(
             i, args.model, args.config, args.weights, args.min_score, args.verbose
         )
+    print(datetime.datetime.now(), "Done")
 
 
 if __name__ == "__main__":

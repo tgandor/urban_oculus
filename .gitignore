@@ -118,3 +118,6 @@ datasets
 
 # log of evaluate_coco.py
 .evaluate_log.txt
+
+# JPEG properties
+results/properties_*.json
