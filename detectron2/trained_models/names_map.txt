@@ -1,0 +1,10 @@
+F50-STD R50FPN_x1_big_ilsvrc_ORIG
+F50-Q20 R50FPN_x1_big_ilsvrc_Q20
+F50-Q40 R50FPN_x1_big_ilsvrc_Q40
+F50-T20 R50FPN_x1_small_zoo_Q20
+F50-T40 R50FPN_x1_small_zoo_Q40
+R50-STD R50_x1_big_ilsvrc_ORIG
+R50-Q20 R50_x1_big_ilsvrc_Q20
+R50-Q40 R50_x1_big_ilsvrc_Q40
+R50-T20 R50_x1_small_zoo_Q20
+R50-T40 R50_x1_small_zoo_Q40
