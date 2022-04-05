@@ -51,7 +51,7 @@ def load_gt():
         )
         exit()
 
-    return COCO(ANNOTATIONS, debug=0)
+    return COCO(ANNOTATIONS)
 
 
 def load_detections_results(file_or_dir):
@@ -138,7 +138,9 @@ for df in args.detection_files:
     f1 = 2 * precision * recall / (precision + recall)
 
     print(f"Total objects found: {tp:,} (of {n_gt:,} GT, {n_ign:,} ignored, {fp:,} FP)")
-    print(f"precision {precision*100:.1f} recall {recall*100:.1f} f1 score: {f1*100:.1f}")
+    print(
+        f"precision {precision*100:.1f} recall {recall*100:.1f} f1 score: {f1*100:.1f}"
+    )
 
     model = results["model"].replace("_", r"\_")
     ap = results["results"]["bbox"]["AP"]

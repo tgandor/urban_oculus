@@ -104,7 +104,7 @@ class DetectionResults:
         area_rng=False,
         cache=True,
         dataset="coco_2017_val",
-        debug=0,
+        debug=None,
         gt_match=False,
         iou_thresh=0.5,
         rounding=False,
@@ -127,7 +127,10 @@ class DetectionResults:
         self._detections_by_class = None
         self._detections_by_score = None
         self._all_detections_by_class = None
-        self.gt = load_gt(self.dataset, debug=self.debug)
+        if self.debug:
+            self.gt = load_gt(self.dataset, debug=1)
+        else:
+            self.gt = load_gt(self.dataset)
 
         k = itemgetter("category_id")
         self._num_gt_class = {
@@ -172,7 +175,7 @@ class DetectionResults:
         self.dt = self.gt.loadRes(self.detections)
 
         kwargs = {}
-        if self.debug is not None:
+        if self.debug == 1:
             kwargs["debug"] = self.debug
         self.coco = COCOeval(self.gt, self.dt, iouType="bbox", **kwargs)
 
