@@ -330,11 +330,11 @@ def finish_plot(fig, axes, suptitle=None):
     fig.tight_layout()
 
 
-def save_plot(fig, name):
+def save_plot(fig, name, v=0):
     # https://stackoverflow.com/questions/10784652/png-options-to-produce-smaller-file-size-when-using-savefig
     fig.savefig(f"{name}.png")
-    os.system(f"mogrify +dither -colors 256 {name}.png")
-    os.system(f"optipng -o5 {name}.png")
+    os.system(f"mogrify {'-verbose' if v else ''} +dither -colors 256 {name}.png")
+    os.system(f"optipng {'' if v else '-quiet'} -o5 {name}.png")
     fig.savefig(f"{name}.pdf")
     print(f"Figure saved to {name}.png and {name}.pdf")
 
