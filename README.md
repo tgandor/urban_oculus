@@ -15,6 +15,7 @@ Extra data can be obtained from data repositories:
 
 Most of the code is in standalone scripts and Jupyter notebooks, but there is also a library of utilities, installable from sources via `python setup.py install` or `pip install .`.
 
+* 0.1.1 - save_plot(figure, name_base) function added
 * 0.1.0 - made the detectron dependencies optional, now run pip install -e .\[detectron\]
 * 0.0.9 - view_obj <gt_id> command, update detectron2 dep
 * 0.0.8 - summary_table; plots by model in evaldets.postprocess

@@ -33,3 +33,9 @@ class Names:
     @classmethod
     def for_dataset(cls, dataset):
         return cls(MetadataCatalog.get(dataset))
+
+
+def T_(i18n: dict, text: str):
+    if i18n is None:
+        return text
+    return i18n.get(text, text)

@@ -1,4 +1,3 @@
-
 # flake8: noqa
 import bz2
 import copy
@@ -53,11 +52,12 @@ CONFIGS_1x = {
 
 def conf(model: str, configs=None) -> CfgNode:
     import warnings
+
     if configs is None:
         configs = MODEL_ZOO_CONFIGS
     model_config = configs[model]
     cfg = get_cfg()
     with warnings.catch_warnings():
-        warnings.filterwarnings(action='ignore')
+        warnings.filterwarnings(action="ignore")
         cfg.merge_from_file(model_zoo.get_config_file(model_config))
     return cfg

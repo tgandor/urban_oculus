@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from uo.utils import dirbasename, load, save
 
+from .names import T_
 from .results import CROWD_ID_T, DetectionResults
 
 logger = logging.getLogger()
@@ -167,7 +168,7 @@ class Summary:
             yield model, df
 
     def plot_tc_tp_fp_ex(
-        self, axes=None, *, stack=False, order=None, min_Tc=0.1, **kwargs
+        self, axes=None, *, stack=False, order=None, min_Tc=0.1, i18n=None, **kwargs
     ):
         """Plot"""
         if axes is not None:
@@ -198,7 +199,7 @@ class Summary:
                 x="T_c",
                 y=yy,
                 xlim=(1, min_Tc),
-                ylabel="count",
+                ylabel=T_(i18n, "count"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
@@ -329,6 +330,15 @@ def finish_plot(fig, axes, suptitle=None):
     fig.tight_layout()
 
 
+def save_plot(fig, name):
+    # https://stackoverflow.com/questions/10784652/png-options-to-produce-smaller-file-size-when-using-savefig
+    fig.savefig(f"{name}.png")
+    os.system(f"mogrify +dither -colors 256 {name}.png")
+    os.system(f"optipng -o5 {name}.png")
+    fig.savefig(f"{name}.pdf")
+    print(f"Figure saved to {name}.png and {name}.pdf")
+
+
 def load_rich_results(reval_dir):
     rich_results = [
         load(rr) for rr in sorted(glob.glob(f"{reval_dir}/*/rich_results.json"))
@@ -370,8 +380,8 @@ def baseline_table(reval_dir, header=False):
     hav_ex = all("ex" in d for d in metrics)
     x_col = _table_xcol(metrics)
     fmt = x_col + TABLE_FORMAT + (r" & {ex:} \\" if hav_ex else r" \\")
-    kind = 'tabular' if len(metrics) <= 20 else 'longtable'
-    cols = 'lccccccccrr' if len(metrics) <= 20 else 'l|ccc|ccc|cc|rr'
+    kind = "tabular" if len(metrics) <= 20 else "longtable"
+    cols = "lccccccccrr" if len(metrics) <= 20 else "l|ccc|ccc|cc|rr"
     if not hav_ex:
         print("Warning: no EX column available.")
         head = "\\begin{" + kind + "}{" + cols + "} \\toprule"
