@@ -1,5 +1,4 @@
 from pathlib import Path
-from tkinter.messagebox import NO
 
 from detectron2.data.catalog import Metadata
 from uo.utils import load
