@@ -12,7 +12,6 @@ from pycocotools.cocoeval import COCOeval  # noqa
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg, CfgNode
-from detectron2.data.catalog import Metadata
 from detectron2.data import (  # noqa
     build_detection_test_loader,
     DatasetCatalog,
@@ -61,3 +60,12 @@ def conf(model: str, configs=None) -> CfgNode:
         warnings.filterwarnings(action="ignore")
         cfg.merge_from_file(model_zoo.get_config_file(model_config))
     return cfg
+
+
+# check for datasets, try to symlink (somewhat invasive)
+if not os.path.isdir("datasets") and not os.path.islink("datasets"):
+    home_ds = os.path.join(os.path.expanduser('~'), "datasets")
+    if os.path.exists(home_ds):
+        os.symlink(home_ds, "datasets")
+    else:
+        warnings.warn("Missing datasets/ directory or a symlink to it.")

@@ -1,9 +1,9 @@
 import argparse
 import copy
 import logging
+from pathlib import Path
 from itertools import groupby
 from operator import itemgetter
-from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
@@ -13,23 +13,17 @@ from detectron2.data.catalog import Metadata
 from detectron2.structures import BoxMode
 from detectron2.utils.visualizer import Visualizer
 from jpeg import opencv_degrade_image
-from uo.utils import is_notebook, load
+from uo.utils import is_notebook
 
+from .metadata import load_metadata, load_image_info
 from .names import Names
 from .results import DetectionResults, CROWD_ID_T
 
 logger = logging.getLogger()
 
 
-def _load_metadata(meta: Metadata) -> dict:
-    path = Path(meta.json_file)
-    if not path.exists():
-        path = Path("~").expanduser() / path
-    return load(str(path))
-
-
-def _load_gt_objects(meta: Metadata) -> dict[int, dict]:
-    data = _load_metadata(meta)
+def load_gt_objects(meta: Metadata) -> dict[int, dict]:
+    data = load_metadata(meta)
     names = Names(meta)
     anns = data["annotations"]
     result = {}
@@ -39,23 +33,6 @@ def _load_gt_objects(meta: Metadata) -> dict[int, dict]:
         del d["category_id"]
         result[d["id"]] = d
     return result
-
-
-def _load_image_info(meta: Metadata) -> dict[int, dict]:
-    data = _load_metadata(meta)
-    license_names = {lic["id"]: lic["name"] for lic in data["licenses"]}
-    license_urls = {lic["id"]: lic["url"] for lic in data["licenses"]}
-
-    images = {
-        img["id"]: {
-            **img,
-            "license": license_names[img["license"]],
-            "license_url": license_urls[img["license"]],
-        }
-        for img in data["images"]
-    }
-
-    return images
 
 
 class DatasetIndex:
@@ -76,13 +53,13 @@ class DatasetIndex:
     @property
     def gt(self):
         if self.gt_objects is None:
-            self.gt_objects = _load_gt_objects(self.meta)
+            self.gt_objects = load_gt_objects(self.meta)
         return self.gt_objects
 
     @property
     def info(self):
         if self._image_info is None:
-            self._image_info = _load_image_info(self.meta)
+            self._image_info = load_image_info(self.meta)
         return self._image_info
 
     @property
@@ -386,7 +363,9 @@ def show_detections(
             return v_img
         elif mode == "save":
             _cv2_save_lossless(
-                f"by_image/{image_id}/{save_prefix}_Q={q:02d}_id={image_id}.png", v_img, v
+                f"by_image/{image_id}/{save_prefix}_Q={q:02d}_id={image_id}.png",
+                v_img,
+                v,
             )
         else:
             raise ValueError(f"Invalid mode for show_detections(): {mode}")
