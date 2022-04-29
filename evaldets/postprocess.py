@@ -140,7 +140,7 @@ class Summary:
             df = summaries_by_tc(s)
             yield model, df
 
-    def plot_tc_summaries(self, axes=None, *, order=None, **kwargs):
+    def plot_tc_summaries(self, axes=None, xlim=(1, 0), *, order=None, i18n=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
@@ -153,9 +153,9 @@ class Summary:
             df.plot(
                 x="T_c",
                 y=["TPR", "PPV", "F1"],
-                xlim=(1, 0),
+                xlim=xlim,
                 ylim=(0, 1),
-                ylabel="value",
+                ylabel=T_(i18n, "value"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
