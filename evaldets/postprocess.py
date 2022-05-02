@@ -168,7 +168,7 @@ class Summary:
             yield model, df
 
     def plot_tc_tp_fp_ex(
-        self, axes=None, *, stack=False, order=None, min_Tc=0.1, i18n=None, **kwargs
+        self, axes=None, *, stack=False, order=None, min_Tc=0.1, i18n=None, xlim=None, **kwargs
     ):
         """Plot"""
         if axes is not None:
@@ -180,6 +180,8 @@ class Summary:
         subplot_ord = ord("A")
         models = dict(self.tc_tp_fp_ex())
         yy = ["TP", "FP * (-1)", "TP+EX"] if stack else ["TP", "FP", "EX"]
+        if xlim is None:
+            xlim = (1, min_Tc)
 
         for model in order if order else models.keys():
             df = models[model]
@@ -198,7 +200,7 @@ class Summary:
             ax = df.plot(
                 x="T_c",
                 y=yy,
-                xlim=(1, min_Tc),
+                xlim=xlim,
                 ylabel=T_(i18n, "count"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
