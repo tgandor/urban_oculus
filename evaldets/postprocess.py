@@ -238,7 +238,7 @@ class GrandSummary:
                     df[col] = df[col] / 100
             yield df
 
-    def save_q_summaries(self, excel=True, joint=True):
+    def save_q_summaries(self, excel=True):
         for df in self.q_summaries():
             model = df["model"][0]
             if excel:
