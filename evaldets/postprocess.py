@@ -338,7 +338,7 @@ def save_plot(fig, name, v=0):
     os.system(f"mogrify {'-verbose' if v else ''} +dither -colors 256 {name}.png")
     os.system(f"optipng {'' if v else '-quiet'} -o5 {name}.png")
     fig.savefig(f"{name}.pdf")
-    print(f"Figure saved to {name}.png and {name}.pdf")
+    print(f"Saved {name}.png\n  and {name}.pdf")
 
 
 def load_rich_results(reval_dir):
