@@ -26,7 +26,7 @@ from detectron2.utils.visualizer import Visualizer
 import matplotlib.pyplot as plt
 import pandas as pd  # noqa
 
-from uo.utils import is_notebook, load, top
+from uo.utils import backup, is_notebook, load, top
 from evaldets.api import *
 
 MODEL_ZOO_CONFIGS = {

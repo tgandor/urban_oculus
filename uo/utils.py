@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import pickle
+import shutil
+import time
 import zlib
 from functools import wraps
 from itertools import islice
@@ -112,6 +114,15 @@ def save(obj: dict, path: str) -> None:
             raise
 
     raise ValueError(f"unknown file type: {path}")
+
+
+def backup(path: str) -> None:
+    if not os.path.exists(path):
+        return
+    directory, basename = os.path.split(path)
+    stats = os.stat(path)
+    mtime = time.strftime("%Y%m%d_%H%M%S", time.localtime(stats.st_mtime))
+    shutil.copy(path, os.path.join(directory, f"{mtime}_{basename}"))
 
 
 def top(iterable, n=10):

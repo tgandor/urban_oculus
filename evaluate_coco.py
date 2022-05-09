@@ -9,7 +9,7 @@ import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
-from imports import load
+from imports import backup, load
 
 IoU_T_IDX = 0  # first IoU threshold = 0.5
 MAXDET_IDX = -1  # last "maxDets"
@@ -211,6 +211,7 @@ for df in args.detection_files:
             print("New Results: ", new_results, file=log)
 
     new_results_file = os.path.join(dump_dir, "rich_results.json")
+    backup(new_results_file)
     bbox = {k: v for k, v in results["results"]["bbox"].items() if "-" not in k}
     rich_results = {
         "quality": results["quality"],
