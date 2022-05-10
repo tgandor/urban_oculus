@@ -559,7 +559,7 @@ def gt_for_single_run(subdir: str):
     return summary
 
 
-@cached_directory_data(compress=False)
+@cached_directory_data(compress=True)
 def gt_id_statistics(reval_dir: str):
     try:
         from multiprocess import Pool

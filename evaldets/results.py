@@ -17,6 +17,7 @@ from .names import Names
 
 logger = logging.getLogger()
 
+# GT objects with IDs larger than that are 'crowds'
 CROWD_ID_T = 10 ** 9
 """
 In [8]: '{:,}'.format(max(a['id'] for a in dr.gt.dataset['annotations']))
@@ -65,7 +66,7 @@ def load_detections(file_or_dir, cache=True, debug=True):
     else:
         raise ValueError(f"File or directory not found: {file_or_dir}")
 
-    cache_file = os.path.join(dump_dir, "detections.pkl")
+    cache_file = os.path.join(dump_dir, DetectionResults.CACHE)
     if cache and os.path.exists(cache_file):
         detections = load(cache_file)
         logger.info(f"Loaded cached detections: {cache_file}")
@@ -96,6 +97,8 @@ class DetectionResults:
     TOP_MAX_DET = -1
     # coco.params.areaRng = [<all>, <small>, <medium>, <large>]
     ALL_AREA = 0
+    # path for detections cache
+    CACHE = "detections.pkl.gz"
 
     def __init__(
         self,
@@ -153,7 +156,7 @@ class DetectionResults:
             self.input, self.cache and not no_cache, self.debug
         )
 
-        if self.det_file.endswith(".pkl"):
+        if self.det_file.endswith(".pkl") or self.det_file.endswith(".pkl.gz"):
             self.dt = None
             self.coco = None
             self.cache_loaded = True
@@ -312,7 +315,7 @@ class DetectionResults:
         self.coco.summarize()
 
     def _save_cache(self):
-        cache_file = os.path.join(os.path.dirname(self.det_file), "detections.pkl")
+        cache_file = os.path.join(os.path.dirname(self.det_file), self.CACHE)
         logger.info(f"Saving detections to cache: {cache_file}")
         save(self.detections, cache_file)
 
