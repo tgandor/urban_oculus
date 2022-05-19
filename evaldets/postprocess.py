@@ -8,6 +8,7 @@ import sys
 import warnings
 from datetime import datetime
 from functools import wraps
+import matplotlib
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -332,13 +333,18 @@ def finish_plot(fig, axes, suptitle=None):
     fig.tight_layout()
 
 
-def save_plot(fig, name, v=0):
+def save_plot(fig, name, v=0, c=0, p=1):
     # https://stackoverflow.com/questions/10784652/png-options-to-produce-smaller-file-size-when-using-savefig
     fig.savefig(f"{name}.png")
     os.system(f"mogrify {'-verbose' if v else ''} +dither -colors 256 {name}.png")
     os.system(f"optipng {'' if v else '-quiet'} -o5 {name}.png")
-    fig.savefig(f"{name}.pdf")
-    print(f"Saved {name}.png\n  and {name}.pdf")
+
+    print(f"Saved {name}.png")
+    if p:
+        fig.savefig(f"{name}.pdf")
+        print(f"  and {name}.pdf")
+    if c:
+        plt.close()
 
 
 def load_rich_results(reval_dir):
