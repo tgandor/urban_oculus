@@ -239,7 +239,7 @@ for df in args.detection_files:
 # \newcommand\tsub[1]{\textsubscript{#1}}
 metrics.sort(key=itemgetter(0))
 print(
-    r"Model & AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
+    r"Model & AP & AP\tsub{50} & AP\tsub{75} & AP\tsub{l} & AP\tsub{m}"
     r" & AP\tsub{s} & TPR & PPV & TP & FP & EX \\"
 )
 print(r"\midrule")

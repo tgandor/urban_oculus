@@ -377,7 +377,7 @@ TABLE_FORMAT = (
 )
 
 TABLE_HEADINGS = (
-    r"AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m}"
+    r"AP & AP\tsub{50} & AP\tsub{75} & AP\tsub{l} & AP\tsub{m}"
     r" & AP\tsub{s} & TPR & PPV & TP & FP"
 )
 
@@ -459,7 +459,7 @@ def baseline_table_ap(reval_dir, header=False):
     fmt = x_col + TABLE_FORMAT_AP
 
     head = "\\begin{tabular}{lcccccc}\n\\toprule"
-    headings = r"AP & mAP\tsub{.5} & mAP\tsub{.75} & AP\tsub{l} & AP\tsub{m} & AP\tsub{s} \\ \midrule"
+    headings = r"AP & AP\tsub{50} & AP\tsub{75} & AP\tsub{l} & AP\tsub{m} & AP\tsub{s} \\ \midrule"
 
     if header:
         # \newcommand\tsub[1]{\textsubscript{#1}}
