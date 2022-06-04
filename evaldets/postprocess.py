@@ -415,7 +415,7 @@ def baseline_table(reval_dir, header=False):
         print("\\bottomrule\n\\end{" + kind + "}", file=sys.stderr)
 
 
-TABLE_FORMAT_PRF = "{recall:.1f} & {precision:.1f} & {tp:} & {fp:}"
+TABLE_FORMAT_PRF = "{recall:.1f} & {precision:.1f} & {f1:.1f} & {tp:} & {fp:}"
 
 
 def baseline_table_prf(reval_dir, header=False):
@@ -427,11 +427,11 @@ def baseline_table_prf(reval_dir, header=False):
 
     if not hav_ex:
         print("Warning: no EX column available.")
-        head = "\\begin{tabular}{lccrr} \\toprule"
-        headings = r"TPR & PPV & TP & FP \\ \midrule"
+        head = "\\begin{tabular}{lcccrr} \\toprule"
+        headings = r"TPR\,\% & PPV\,\% & F1\,\% & TP & FP \\ \midrule"
     else:
-        head = "\\begin{tabular}{lccrrr}\n\\toprule"
-        headings = r"TPR & PPV & TP & FP & EX \\ \midrule"
+        head = "\\begin{tabular}{lcccrrr}\n\\toprule"
+        headings = r"TPR\% & PPV\% & F1\% & TP & FP & EX \\ \midrule"
 
     if header:
         # \newcommand\tsub[1]{\textsubscript{#1}}
@@ -441,6 +441,7 @@ def baseline_table_prf(reval_dir, header=False):
     for row in metrics:
         row["precision"] *= 100
         row["recall"] *= 100
+        row["f1"] *= 100
         row["model"] = row["model"].replace("_", r"\_")  # LaTeX excape
         print(fmt.format(**row))
 
