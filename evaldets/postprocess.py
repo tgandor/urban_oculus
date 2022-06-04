@@ -160,6 +160,7 @@ class Summary:
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
+            ax.set_xlabel(T_(i18n, "T_c"))
             subplot_ord += 1
 
     def tc_tp_fp_ex(self):
