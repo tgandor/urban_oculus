@@ -8,7 +8,6 @@ import sys
 import warnings
 from datetime import datetime
 from functools import wraps
-import matplotlib
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -581,6 +580,11 @@ def baseline_table_prf_OO(reval_dir, header=True):
     table = Table(
         RowHeader("model", "Model"),
         Percent("precision", r"PPV\,\%"),
+        Percent("recall", r"TPR\,\%"),
+        Percent("f1", r"F1\,\%"),
+        Column("tp", "TP"),
+        Column("fp", "FP", bad=True),
+        Column("ex", "EX"),
         header=header,
     )
     table.render(metrics)
