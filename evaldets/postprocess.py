@@ -312,6 +312,7 @@ class GrandSummary:
             subplot_ord += 1
 
 
+# region: matplotlib
 def get_figure_axes(**kwargs):
     """Produce a default figure with subplots for 9 models."""
     fig, axes = plt.subplots(2, 5, **kwargs)
@@ -346,6 +347,7 @@ def save_plot(fig, name, v=0, c=0, p=1):
         print(f"  and {name}.pdf")
     if c:
         plt.close()
+# endregion
 
 
 def load_rich_results(reval_dir):
