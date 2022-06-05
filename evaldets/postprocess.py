@@ -141,7 +141,9 @@ class Summary:
             df = summaries_by_tc(s)
             yield model, df
 
-    def plot_tc_summaries(self, axes=None, xlim=(1, 0), *, order=None, i18n=None, **kwargs):
+    def plot_tc_summaries(
+        self, axes=None, xlim=(1, 0), *, order=None, i18n=None, **kwargs
+    ):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
@@ -170,7 +172,15 @@ class Summary:
             yield model, df
 
     def plot_tc_tp_fp_ex(
-        self, axes=None, *, stack=False, order=None, min_Tc=0.1, i18n=None, xlim=None, **kwargs
+        self,
+        axes=None,
+        *,
+        stack=False,
+        order=None,
+        min_Tc=0.1,
+        i18n=None,
+        xlim=None,
+        **kwargs,
     ):
         """Plot"""
         if axes is not None:
@@ -347,6 +357,8 @@ def save_plot(fig, name, v=0, c=0, p=1):
         print(f"  and {name}.pdf")
     if c:
         plt.close()
+
+
 # endregion
 
 
@@ -360,6 +372,92 @@ def load_rich_results(reval_dir):
             "Make sure to pass a directory with evaluator_dump_<model>_<quality> subdirectories."
         )
     return rich_results
+
+
+# region: latex tables
+class Column:
+    format = "{}"
+    align = "r"
+
+    def __init__(self, key, caption, bad=False):
+        self.key = key
+        self.caption = caption
+        self.bad = bad
+        self.max1 = None
+        self.max2 = None
+
+    def _get_value(self, row):
+        return row[self.key]
+
+    def learn(self, data):
+        values = sorted(set(self._get_value(row) for row in data), reverse=not self.bad)
+        self.max1 = values[0]
+        if len(values) > 1:
+            self.max2 = values[1]
+
+    def render(self, row):
+        value = self._get_value(row)
+        raw_repr = self.format.format(value)
+        if value == self.max1:
+            return r"\textbf{" + raw_repr + "}"
+        if value == self.max2:
+            return r"\underline{" + raw_repr + "}"
+        return raw_repr
+
+
+class RawPercent(Column):
+    """Floats from 0.0 to 100.0."""
+
+    format = "{:.1f}"
+    align = "c"
+
+
+class Percent(RawPercent):
+    """Floats from 0.0 to 1.0, which should show as percent."""
+
+    def _get_value(self, row):
+        return row[self.key] * 100
+
+
+class RowHeader(Column):
+    align = "l"
+
+    def learn(self, data):
+        pass
+
+    def _get_value(self, row):
+        return row[self.key].replace("_", r"\_")
+
+
+class Table:
+    hdrfile = sys.stdout
+
+    def __init__(self, *columns: Column, header=True) -> None:
+        self.columns = columns
+        self.header = header
+
+    def _header(self):
+        if not self.header:
+            return
+        alignments = "".join(c.align for c in self.columns)
+        print("\\begin{tabular}{" + alignments + "} \\toprule", file=self.hdrfile)
+        headings = " & ".join(c.caption for c in self.columns)
+        print(headings + r" \\ \midrule", file=self.hdrfile)
+
+    def _footer(self):
+        if not self.header:
+            return
+        print("\\bottomrule\n\\end{tabular}", file=self.hdrfile)
+
+    def render(self, data):
+        for col in self.columns:
+            col.learn(data)
+
+        self._header()
+        for row in data:
+            line = " & ".join(col.render(row) for col in self.columns)
+            print(line + r" \\")
+        self._footer()
 
 
 def _table_xcol(metrics):
@@ -478,6 +576,45 @@ def baseline_table_ap(reval_dir, header=False):
         print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
 
 
+def baseline_table_prf_OO(reval_dir, header=True):
+    metrics = load_rich_results(reval_dir)
+    table = Table(
+        RowHeader("model", "Model"),
+        Percent("precision", r"PPV\,\%"),
+        header=header,
+    )
+    table.render(metrics)
+
+
+def baseline_table_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "reval_dir",
+        help="directory to summare with DIRECT evaluator_dump_(...) subdirectories",
+    )
+    parser.add_argument(
+        "--header", "-g", action="store_true", help="print LaTeX table header"
+    )
+    parser.add_argument(
+        "--prf", action="store_true", help="print only T_c dependent metrics."
+    )
+    parser.add_argument(
+        "--ap", action="store_true", help="print only T_c independent metrics."
+    )
+
+    args = parser.parse_args()
+    if args.prf:
+        baseline_table_prf(args.reval_dir, args.header)
+    elif args.ap:
+        baseline_table_ap(args.reval_dir, args.header)
+    else:
+        baseline_table(args.reval_dir, args.header)
+
+
+# endregion
+
+
+# region: Q subdirectories
 def symlink_by_quality(reval_dir: str):
     reval_dir = os.path.abspath(os.path.expanduser(reval_dir))
     subdirs = _get_model_subdirectories(reval_dir)
@@ -511,6 +648,9 @@ def _get_quality_subdirectories(top_dir):
     return sorted(glob.glob(os.path.join(top_dir, "quality_*/")), reverse=True)
 
 
+# endregion
+
+# region: PDF Book plots, 1 page per Q
 def plot_book(reval_dir, step=1):
     from matplotlib.backends.backend_pdf import PdfPages
 
@@ -555,6 +695,9 @@ def _plot_book() -> None:
     plot_book(args.reval_dir)
 
 
+# endregion
+
+
 def gt_for_single_run(subdir: str):
     dr = DetectionResults(subdir)
     meta = load_meta(subdir)
@@ -586,31 +729,6 @@ def gt_id_statistics(reval_dir: str):
             data.extend(chunk)
 
     return pd.concat(data, ignore_index=True)
-
-
-def baseline_table_main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "reval_dir",
-        help="directory to summare with DIRECT evaluator_dump_(...) subdirectories",
-    )
-    parser.add_argument(
-        "--header", "-g", action="store_true", help="print LaTeX table header"
-    )
-    parser.add_argument(
-        "--prf", action="store_true", help="print only T_c dependent metrics."
-    )
-    parser.add_argument(
-        "--ap", action="store_true", help="print only T_c independent metrics."
-    )
-
-    args = parser.parse_args()
-    if args.prf:
-        baseline_table_prf(args.reval_dir, args.header)
-    elif args.ap:
-        baseline_table_ap(args.reval_dir, args.header)
-    else:
-        baseline_table(args.reval_dir, args.header)
 
 
 if __name__ == "__main__":
