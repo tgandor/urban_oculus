@@ -590,6 +590,21 @@ def baseline_table_prf_OO(reval_dir, header=True):
     table.render(metrics)
 
 
+def baseline_table_ap_OO(reval_dir, header=True):
+    metrics = load_rich_results(reval_dir)
+    table = Table(
+        RowHeader("model", "Model"),
+        RawPercent("AP", r"AP"),
+        RawPercent("AP50", r"AP\tsub{50}"),
+        RawPercent("AP75", r"AP\tsub{75}"),
+        RawPercent("APl", r"AP\tsub{l}"),
+        RawPercent("APm", r"AP\tsub{m}"),
+        RawPercent("APs", r"AP\tsub{s}"),
+        header=header,
+    )
+    table.render(metrics)
+
+
 def baseline_table_main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
