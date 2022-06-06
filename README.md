@@ -11,6 +11,11 @@ Extra data can be obtained from data repositories:
 * <https://doi.org/10.7910/DVN/UPIKSF>
 * <https://doi.org/10.7910/DVN/UHEP3C>
 
+### Dependencies
+
+* Detectron2: <https://detectron2.readthedocs.io/en/latest/tutorials/install.html>
+* Pandas, Matplotlib, Jupyter Notebook / Lab: standard `pip` installation.
+
 ### Changelog of the included python library
 
 Most of the code is in standalone scripts and Jupyter notebooks, but there is also a library of utilities, installable from sources via `python setup.py install` or `pip install .`.
