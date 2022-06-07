@@ -81,7 +81,7 @@ def image_for_id(image_id, quality=101):
     path = IMAGE_ROOT / f"{image_id:012d}.jpg"
     if not path.exists():
         path = Path("~").expanduser() / path
-    logger.debug(f"Reading image: {path}")
+    logger.info(f"Reading image: {path}")
     img = cv2.imread(str(path))
     return img
 
@@ -89,7 +89,7 @@ def image_for_id(image_id, quality=101):
 def visualizer_for_id(image_id, q=None, **kwargs):
     img = image_for_id(image_id)
     if q is not None:
-        logger.debug(f"Compressing image to quality {q}")
+        logger.info(f"Compressing image to quality {q}")
         img = opencv_degrade_image(img, q)
     visualizer = Visualizer(img[:, :, ::-1], metadata=DSI.meta, **kwargs)
     return visualizer
@@ -424,6 +424,10 @@ def gt_main():
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--www", "-w", action="store_true")
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO)
+
     if args.www:
         browse_image(args.image_id)
     else:

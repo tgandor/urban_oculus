@@ -20,6 +20,7 @@ Extra data can be obtained from data repositories:
 
 Most of the code is in standalone scripts and Jupyter notebooks, but there is also a library of utilities, installable from sources via `python setup.py install` or `pip install .`.
 
+* 0.1.2 - view_gt improved logger configuration when -v
 * 0.1.1 - save_plot(figure, name_base) function added
 * 0.1.0 - made the detectron dependencies optional, now run pip install -e .\[detectron\]
 * 0.0.9 - view_obj <gt_id> command, update detectron2 dep
@@ -27,3 +28,12 @@ Most of the code is in standalone scripts and Jupyter notebooks, but there is al
 * 0.0.7 - symlink_q from postprocess (and previous changes: Summary, GrandSummary)
 * 0.0.5 - added view_gt command, with --scale and --verbose
 * 0.0.1 - 0.0.4: jpeg, quantization, quality identification, evaldets, uo.utils
+
+### Examples of included command usage
+
+#### View image GT objects by image ID
+
+Displays the image in matplotlib window, with JSON metadata and GT annotations.
+```
+$ view_gt 448263 -v
+```
