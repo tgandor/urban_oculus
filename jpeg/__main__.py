@@ -19,7 +19,9 @@ stats = collections.Counter()
 
 for filename in (
     # good not only for windows, also big globs on Linux (cli limits).
-    fn for p in args.filenames for fn in (glob.glob(p) if "*" in p else [p])
+    fn
+    for p in args.filenames
+    for fn in (glob.glob(p) if "*" in p else [p])
 ):
     q = recognize_QT_quality(filename, failsafe=True)
     stats[q] += 1
