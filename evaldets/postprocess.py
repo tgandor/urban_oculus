@@ -260,7 +260,7 @@ class GrandSummary:
                 df.to_csv(out)
             logger.info(f"Saved Q summaries to: {out}")
 
-    def plot_q_summaries(self, axes=None, order=None, **kwargs):
+    def plot_q_summaries(self, axes=None, order=None, i18n=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
@@ -274,7 +274,8 @@ class GrandSummary:
                 x="quality",
                 y=["PPV", "TPR", "F1"],
                 ylim=(0, 1),
-                ylabel="value",
+                ylabel=T_(i18n, "value"),
+                xlabel=T_(i18n, "quality"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
