@@ -181,7 +181,7 @@ class Summary:
         xlim=None,
         **kwargs,
     ):
-        """Plot"""
+        """Plot counts of TP, FP and EX againts Tc."""
         if axes is not None:
             axes = iter(axes.ravel())
 
@@ -281,12 +281,21 @@ class GrandSummary:
             )
             subplot_ord += 1
 
-    def plot_ap_summaries(self, axes=None, by_size=False, order=None, **kwargs):
+    def plot_ap_summaries(
+        self, axes=None, by_size=False, order=None, i18n=None, **kwargs
+    ):
         if axes is not None:
             axes = iter(axes.ravel())
+
+        if by_size and "color" not in kwargs:
+            kwargs["color"] = ["#777777", "#444444", "#000000"]
+
+        if not by_size and "color" not in kwargs:
+            kwargs["color"] = ["#000000", "#005500", "#00aa00"]
+
         subplot_ord = ord("A")
         models = {df["model"][0]: df for df in self.ap_summaries()}
-        columns = ["APl", "APm", "APs"] if by_size else ["AP50", "AP75", "AP"]
+        columns = ["APl", "APm", "APs"] if by_size else ["AP", "AP75", "AP50"]
         for model in order if order else models.keys():
             df = models[model]
             if axes is not None:
@@ -296,13 +305,20 @@ class GrandSummary:
                 x="quality",
                 y=columns,
                 ylim=(0, 1),
-                ylabel="value",
+                ylabel=T_(i18n, "value"),
+                xlabel=T_(i18n, "quality"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
             subplot_ord += 1
+            if by_size:
+                # https://stackoverflow.com/questions/62470743/change-line-width-of-specific-line-in-line-plot-pandas-matplotlib
+                w = 3
+                for line in ax.get_lines():
+                    line.set_linewidth(w)
+                    w -= 1
 
-    def plot_ap_derivatives(self, axes=None, order=None, **kwargs):
+    def plot_ap_derivatives(self, axes=None, order=None, i18n=None, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
@@ -313,8 +329,8 @@ class GrandSummary:
                 ax = next(axes)
                 kwargs["ax"] = ax
             df.AP.rename("d(AP)/dQ").diff().rolling(5).mean().plot(
-                xlabel="quality",
-                ylabel="d(AP)/dQ ",
+                xlabel=T_(i18n, "quality"),
+                ylabel=T_(i18n, "d(AP)/dQ"),
                 legend=False,
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
