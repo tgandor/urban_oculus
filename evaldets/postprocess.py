@@ -282,7 +282,7 @@ class GrandSummary:
             subplot_ord += 1
 
     def plot_ap_summaries(
-        self, axes=None, by_size=False, order=None, i18n=None, **kwargs
+        self, axes=None, by_size=False, relative=False, order=None, i18n=None, **kwargs
     ):
         if axes is not None:
             axes = iter(axes.ravel())
@@ -294,8 +294,18 @@ class GrandSummary:
             kwargs["color"] = ["#000000", "#005500", "#00aa00"]
 
         subplot_ord = ord("A")
+        ylim = (0, 1)
+        value_caption = "value"
         models = {df["model"][0]: df for df in self.ap_summaries()}
         columns = ["APl", "APm", "APs"] if by_size else ["AP", "AP75", "AP50"]
+
+        if relative:
+            ylim = (0, 100)
+            value_caption = "% of max value"
+            for df in models.values():
+                for col in columns:
+                    df[col] = df[col] / df[col].max() * 100
+
         for model in order if order else models.keys():
             df = models[model]
             if axes is not None:
@@ -304,8 +314,8 @@ class GrandSummary:
             df.plot(
                 x="quality",
                 y=columns,
-                ylim=(0, 1),
-                ylabel=T_(i18n, "value"),
+                ylim=ylim,
+                ylabel=T_(i18n, value_caption),
                 xlabel=T_(i18n, "quality"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
