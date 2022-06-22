@@ -104,13 +104,19 @@ def subdir_summaries(top_dir: str):
     return pd.DataFrame(data)
 
 
-def subdir_meta_df(model_dir: str) -> pd.DataFrame:
+def subdir_meta_df(model_dir: str, model_is_basename=False) -> pd.DataFrame:
     subdirs = sorted(glob.glob(os.path.join(model_dir, "*/")))
     data = []
+
     for subdir in subdirs:
         meta = load_meta(subdir)
         data.append(meta)
-    return pd.DataFrame(data)
+
+    df = pd.DataFrame(data)
+    if model_is_basename:
+        df['model'] = dirbasename(model_dir)
+
+    return df
 
 
 def _get_model_subdirectories(top_dir):
@@ -227,8 +233,9 @@ class Summary:
 class GrandSummary:
     """For top level reval directory."""
 
-    def __init__(self, reval_dir: str) -> None:
+    def __init__(self, reval_dir: str, model_is_basename=False) -> None:
         self.reval_dir = reval_dir
+        self.model_is_basename = model_is_basename
         self.phys_dir = os.path.expanduser(reval_dir)
         self.subdirs = _get_model_subdirectories(self.phys_dir)
 
@@ -239,11 +246,13 @@ class GrandSummary:
         """For each model subdirectory get a df with per-Q summary() results."""
         for s in self.subdirs:
             df = subdir_summaries(s)
+            if self.model_is_basename:
+                df["model"] = dirbasename(s)
             yield df
 
     def ap_summaries(self):
         for s in self.subdirs:
-            df = subdir_meta_df(s)
+            df = subdir_meta_df(s, self.model_is_basename)
             for col in df.columns:
                 if col.startswith("AP"):
                     df[col] = df[col] / 100
@@ -349,18 +358,21 @@ class GrandSummary:
 
 
 # region: matplotlib
-def get_figure_axes(**kwargs):
+def get_figure_axes(rows=2, cols=5, h=6, w=15, **kwargs):
     """Produce a default figure with subplots for 9 models."""
-    fig, axes = plt.subplots(2, 5, **kwargs)
-    fig.set_figheight(6)
-    fig.set_figwidth(15)
+    fig, axes = plt.subplots(rows, cols, **kwargs)
+    fig.set_figheight(h)
+    fig.set_figwidth(w)
     return fig, axes
 
 
-def finish_plot(fig, axes, suptitle=None):
+def finish_plot(fig, axes, legend_row=1, legend_col=4, clear_col=None, suptitle=None):
     """Layout and place legend for a figure created with get_figure_axes()."""
-    axes[1, 4].axis("off")
-    axes[1, 4].legend(
+    if clear_col is None:
+        clear_col = legend_col
+    for col in range(clear_col, legend_col+1):
+        axes[legend_row, col].axis("off")
+    axes[legend_row, legend_col].legend(
         *axes[0, 0].get_legend_handles_labels(),
         loc="lower right",
         fontsize="x-large",
