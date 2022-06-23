@@ -121,3 +121,6 @@ datasets
 
 # JPEG properties
 results/properties_*.json
+
+# data about degraded COCO val2017
+data/rate_ssim_byQ/
