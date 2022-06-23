@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import cv2
 
@@ -29,6 +30,10 @@ def cv2_imshow(image):
 
 def main():
     args = _parse_cli()
+    if not os.path.exists(args.weights):
+        print(f"Missing weights file {args.weights}. Please run train_balloons.py first...")
+        exit()
+
     cfg = get_cfg()
     cfg.merge_from_file(args.config)
     cfg.MODEL.WEIGHTS = args.weights
