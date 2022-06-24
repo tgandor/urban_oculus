@@ -18,7 +18,26 @@ from .names import T_
 from .results import CROWD_ID_T, DetectionResults
 
 logger = logging.getLogger()
+
 DEFAULT_ORDER = "R101 R101_C4 R101_DC5 R101_FPN X101 R50 R50_C4 R50_DC5 R50_FPN".split()
+
+TRAINED_ORDER = [
+    # Row 1: Faster R-CNN
+    "F50-STD",
+    "F50-Q20",
+    "F50-Q40",
+    "F50-T20",
+    "F50-T40",
+    # Row 2: RetinaNet
+    "R50-STD",
+    "R50-Q20",
+    "R50-Q40",
+    "R50-T20",
+    "R50-T40",
+    # Row 3: ZOO models: F-RCNN, Retina; 2 empty panes, legend.
+    "F50-D2",
+    "R50-D2",
+]
 
 
 def cached_directory_data(f=None, *, compress=True):
@@ -114,7 +133,7 @@ def subdir_meta_df(model_dir: str, model_is_basename=False) -> pd.DataFrame:
 
     df = pd.DataFrame(data)
     if model_is_basename:
-        df['model'] = dirbasename(model_dir)
+        df["model"] = dirbasename(model_dir)
 
     return df
 
@@ -370,7 +389,7 @@ def finish_plot(fig, axes, legend_row=1, legend_col=4, clear_col=None, suptitle=
     """Layout and place legend for a figure created with get_figure_axes()."""
     if clear_col is None:
         clear_col = legend_col
-    for col in range(clear_col, legend_col+1):
+    for col in range(clear_col, legend_col + 1):
         axes[legend_row, col].axis("off")
     axes[legend_row, legend_col].legend(
         *axes[0, 0].get_legend_handles_labels(),
