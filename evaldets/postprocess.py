@@ -60,13 +60,41 @@ def cached_directory_data(f=None, *, compress=True):
 
     if f is None:
         return decorator
+    return decorator(f)
 
+
+def cached_with_args(f=None, *, compress=True):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(directory, *args):
+            directory = os.path.expanduser(directory)
+            signature = f.__name__
+            if len(args):
+                signature = "_".join([signature] + [str(a) for a in args])
+            cache_file = os.path.join(
+                directory, f"{signature}.pkl{'.gz' if compress else ''}"
+            )
+            if os.path.exists(cache_file):
+                logger.info(
+                    f"Loading cached {f.__name__}{args} results from {cache_file}."
+                )
+                return load(cache_file)
+            value = f(directory, *args)
+            save(value, cache_file)
+            logger.info(f"Cached {f.__name__}{args} results to {cache_file}.")
+            return value
+
+        return wrapper
+
+    if f is None:
+        return decorator
     return decorator(f)
 
 
 SCORE_TRHS = np.arange(0.05, 1, 0.05)
 
 
+@cached_with_args
 def get_summary(subdir, t_score=0):
     dr = DetectionResults(subdir)
     summary = dr.summary(t_score=t_score)

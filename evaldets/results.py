@@ -81,8 +81,6 @@ class DetectionResults:
     """
     Attributes:
         debug: int debug level of COCO and COCOeval
-            This only works with my fork:
-            https://github.com/tgandor/cocoapi/tree/reformatted
     """
 
     # recThrs = self.coco.params.recThrs
