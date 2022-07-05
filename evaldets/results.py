@@ -332,7 +332,7 @@ class DetectionResults:
         return self.detections[idx]
 
     def __repr__(self) -> str:
-        return "<DetectionResult>"
+        return "<DetectionResults>"
 
     @property
     def quality(self):
