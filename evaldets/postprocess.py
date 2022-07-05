@@ -126,11 +126,12 @@ def tp_fp_ex_by_tc(result_dir):
     )
 
 
-def load_meta(subdir):
-    results = os.path.join(subdir, "rich_results.json")
-    if os.path.exists(results):
-        return load(results)
-    logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
+def load_meta(subdir, rich=True):
+    if rich:
+        results = os.path.join(subdir, "rich_results.json")
+        if os.path.exists(results):
+            return load(results)
+        logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
     results = load(os.path.join(subdir, "results.json"))
     results.update(results["results"]["bbox"])
     del results["results"]
@@ -147,11 +148,13 @@ def subdir_summaries(top_dir: str, t_score=0):
         meta = load_meta(subdir)
         summary["model"] = meta["model"]
         summary["quality"] = meta["quality"]
+
         data.append(summary)
     return pd.DataFrame(data)
 
 
 def subdir_meta_df(model_dir: str, model_is_basename=False) -> pd.DataFrame:
+    model_dir = os.path.expanduser(model_dir)
     subdirs = sorted(glob.glob(os.path.join(model_dir, "*/")))
     data = []
 
@@ -163,6 +166,28 @@ def subdir_meta_df(model_dir: str, model_is_basename=False) -> pd.DataFrame:
     if model_is_basename:
         df["model"] = dirbasename(model_dir)
 
+    return df
+
+
+def subdir_summaries_with_ap(model_dir, t_score=0, model_is_basename=False, raw=False):
+    """Combine subdir_summaries(model_dir, t_score) and results.json."""
+    model_dir = os.path.expanduser(model_dir)
+    subdirs = sorted(glob.glob(os.path.join(model_dir, "*/")))
+    data = []
+
+    for subdir in subdirs:
+        meta = load_meta(subdir, rich=False)
+        summary = get_summary(subdir, t_score)
+        meta.update(summary)
+        if model_is_basename:
+            meta["model"] = dirbasename(model_dir)
+
+        data.append(meta)
+
+    if raw:
+        return data
+
+    df = pd.DataFrame(data)
     return df
 
 
@@ -184,8 +209,8 @@ class Summary:
         self.subdirs = sorted(glob.glob(os.path.join(self.phys_dir, "*/")))
         self.metadata = {subdir: load_meta(subdir) for subdir in self.subdirs}
 
-    def get_summaries(self):
-        return subdir_summaries(self.phys_dir)
+    def get_summaries(self, t_score=0):
+        return subdir_summaries(self.phys_dir, t_score)
 
     def tc_summaries(self):
         for s in self.subdirs:
@@ -460,6 +485,8 @@ def load_rich_results(reval_dir):
 
 
 # region: latex tables
+
+# region: new style OO tables
 class Column:
     format = "{}"
     align = "r"
@@ -517,26 +544,38 @@ class RowHeader(Column):
 class Table:
     hdrfile = sys.stdout
 
-    def __init__(self, *columns: Column, header=True) -> None:
+    def __init__(
+        self, *columns: Column, header=True, long=False, mark_best=True
+    ) -> None:
         self.columns = columns
         self.header = header
+        self.long = long
+        self.mark_best = mark_best
+
+    @property
+    def tabular(self):
+        return "longtable" if self.long else "tabular"
 
     def _header(self):
         if not self.header:
             return
         alignments = "".join(c.align for c in self.columns)
-        print("\\begin{tabular}{" + alignments + "} \\toprule", file=self.hdrfile)
+        print(
+            "\\begin{" + self.tabular + "}{" + alignments + "} \\toprule",
+            file=self.hdrfile,
+        )
         headings = " & ".join(c.caption for c in self.columns)
         print(headings + r" \\ \midrule", file=self.hdrfile)
 
     def _footer(self):
         if not self.header:
             return
-        print("\\bottomrule\n\\end{tabular}", file=self.hdrfile)
+        print("\\bottomrule\n\\end{" + self.tabular + "}", file=self.hdrfile)
 
     def render(self, data):
-        for col in self.columns:
-            col.learn(data)
+        if self.mark_best:
+            for col in self.columns:
+                col.learn(data)
 
         self._header()
         for row in data:
@@ -545,13 +584,74 @@ class Table:
         self._footer()
 
 
+def baseline_table_prf_OO(reval_dir, header=True):
+    metrics = load_rich_results(reval_dir)
+    table = Table(
+        RowHeader("model", "Model"),
+        Percent("precision", r"PPV\,\%"),
+        Percent("recall", r"TPR\,\%"),
+        Percent("f1", r"F1\,\%"),
+        Column("tp", "TP"),
+        Column("fp", "FP", bad=True),
+        Column("ex", "EX"),
+        header=header,
+    )
+    table.render(metrics)
+
+
+def baseline_table_ap_OO(reval_dir, header=True):
+    metrics = load_rich_results(reval_dir)
+    table = Table(
+        Column("quality", "Q"),
+        RawPercent("AP", r"AP"),
+        RawPercent("AP50", r"AP\tsub{50}"),
+        RawPercent("AP75", r"AP\tsub{75}"),
+        RawPercent("APl", r"AP\tsub{l}"),
+        RawPercent("APm", r"AP\tsub{m}"),
+        RawPercent("APs", r"AP\tsub{s}"),
+        header=header,
+    )
+    table.render(metrics)
+
+
+def by_quality_table_OO(model_dir, header=True, t_score=0.5, name_by_dir=False):
+    """Replacement for baseline_table() when used on a model directory (by quality)."""
+    data = subdir_summaries_with_ap(model_dir, t_score, name_by_dir, raw=True)
+    table = Table(
+        Column("quality", "quality"),
+        RawPercent("AP", r"AP"),
+        RawPercent("AP50", r"AP\tsub{50}"),
+        RawPercent("AP75", r"AP\tsub{75}"),
+        RawPercent("APl", r"AP\tsub{l}"),
+        RawPercent("APm", r"AP\tsub{m}"),
+        RawPercent("APs", r"AP\tsub{s}"),
+        Percent("PPV", r"PPV\,\%"),
+        Percent("TPR", r"TPR\,\%"),
+        Percent("F1", r"F1\,\%"),
+        Column("TP", "TP"),
+        Column("FP", "FP", bad=True),
+        Column("EX", "EX"),
+        header=header,
+        long=True,
+        mark_best=False,
+    )
+    table.render(data)
+
+
+# endregion
+
+# region: baseline_table() -- old style
 def _table_xcol(metrics):
+    """Find if this is a collection of same quality, or model.
+    Return the variable attribute (X column ~ row header)."""
     if len(set(d["quality"] for d in metrics)) == 1:
         return "{model} & "
     return "{quality} & "
 
 
 def _table_xhdr(metrics):
+    """Find if this is a collection of same quality, or model.
+    Return the row headers' column header."""
     if len(set(d["quality"] for d in metrics)) == 1:
         return "Model & "
     return "Q & "
@@ -600,6 +700,9 @@ def baseline_table(reval_dir, header=False):
         print("\\bottomrule\n\\end{" + kind + "}", file=sys.stderr)
 
 
+# endregion
+
+# region: baseline_table_prf() -- old style
 TABLE_FORMAT_PRF = "{recall:.1f} & {precision:.1f} & {f1:.1f} & {tp:} & {fp:}"
 
 
@@ -634,6 +737,8 @@ def baseline_table_prf(reval_dir, header=False):
         print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
 
 
+# endregion
+# region: baseline_table_ap() -- old style
 TABLE_FORMAT_AP = (
     r"{AP:.1f} & {AP50:.1f} & {AP75:.1f} & {APl:.1f} & {APm:.1f} & {APs:.1f} \\"
 )
@@ -661,34 +766,7 @@ def baseline_table_ap(reval_dir, header=False):
         print("\\bottomrule\n\\end{tabular}", file=sys.stderr)
 
 
-def baseline_table_prf_OO(reval_dir, header=True):
-    metrics = load_rich_results(reval_dir)
-    table = Table(
-        RowHeader("model", "Model"),
-        Percent("precision", r"PPV\,\%"),
-        Percent("recall", r"TPR\,\%"),
-        Percent("f1", r"F1\,\%"),
-        Column("tp", "TP"),
-        Column("fp", "FP", bad=True),
-        Column("ex", "EX"),
-        header=header,
-    )
-    table.render(metrics)
-
-
-def baseline_table_ap_OO(reval_dir, header=True):
-    metrics = load_rich_results(reval_dir)
-    table = Table(
-        RowHeader("model", "Model"),
-        RawPercent("AP", r"AP"),
-        RawPercent("AP50", r"AP\tsub{50}"),
-        RawPercent("AP75", r"AP\tsub{75}"),
-        RawPercent("APl", r"AP\tsub{l}"),
-        RawPercent("APm", r"AP\tsub{m}"),
-        RawPercent("APs", r"AP\tsub{s}"),
-        header=header,
-    )
-    table.render(metrics)
+# endregion
 
 
 def baseline_table_main():
