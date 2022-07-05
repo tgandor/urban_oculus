@@ -137,13 +137,13 @@ def load_meta(subdir):
     return results
 
 
-@cached_directory_data
-def subdir_summaries(top_dir: str):
+@cached_with_args
+def subdir_summaries(top_dir: str, t_score=0):
     subdirs = sorted(glob.glob(os.path.join(top_dir, "*/")))
     data = []
     for subdir in subdirs:
         logger.debug(f"{subdir=}")
-        summary = get_summary(subdir)
+        summary = get_summary(subdir, t_score)
         meta = load_meta(subdir)
         summary["model"] = meta["model"]
         summary["quality"] = meta["quality"]
@@ -289,10 +289,10 @@ class GrandSummary:
     def __repr__(self):
         return f"GrandSummary('{self.reval_dir}')"
 
-    def q_summaries(self):
+    def q_summaries(self, t_score=0):
         """For each model subdirectory get a df with per-Q summary() results."""
         for s in self.subdirs:
-            df = subdir_summaries(s)
+            df = subdir_summaries(s, t_score)
             if self.model_is_basename:
                 df["model"] = dirbasename(s)
             yield df
@@ -316,11 +316,11 @@ class GrandSummary:
                 df.to_csv(out)
             logger.info(f"Saved Q summaries to: {out}")
 
-    def plot_q_summaries(self, axes=None, order=None, i18n=None, **kwargs):
+    def plot_q_summaries(self, axes=None, order=None, i18n=None, t_score=0, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
-        models = {df["model"][0]: df for df in self.q_summaries()}
+        models = {df["model"][0]: df for df in self.q_summaries(t_score)}
         for model in order if order else models.keys():
             df = models[model]
             if axes is not None:
