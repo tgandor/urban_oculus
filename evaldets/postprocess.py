@@ -545,23 +545,39 @@ class Table:
     hdrfile = sys.stdout
 
     def __init__(
-        self, *columns: Column, header=True, long=False, mark_best=True
+        self, *columns: Column, header=True, long=False, mark_best=True, groups=None
     ) -> None:
         self.columns = columns
         self.header = header
         self.long = long
         self.mark_best = mark_best
+        self.groups = groups
 
     @property
     def tabular(self):
         return "longtable" if self.long else "tabular"
 
+    @property
+    def alignments(self):
+        """Generate latex column alignment, possibly with verical lines."""
+        alignments = "".join(c.align for c in self.columns)
+        if not self.groups:
+            return alignments
+        split = []
+        ia = iter(alignments)
+        for g in self.groups:
+            for _ in range(g):
+                split.append(next(ia))
+            split.append('|')
+        split.extend(ia)
+        return "".join(split)
+
     def _header(self):
         if not self.header:
             return
-        alignments = "".join(c.align for c in self.columns)
+
         print(
-            "\\begin{" + self.tabular + "}{" + alignments + "} \\toprule",
+            "\\begin{" + self.tabular + "}{" + self.alignments + "} \\toprule",
             file=self.hdrfile,
         )
         headings = " & ".join(c.caption for c in self.columns)
@@ -634,6 +650,7 @@ def by_quality_table_OO(model_dir, header=True, t_score=0.5, name_by_dir=False):
         header=header,
         long=True,
         mark_best=False,
+        groups=[1, 3, 3, 3],
     )
     table.render(data)
 
