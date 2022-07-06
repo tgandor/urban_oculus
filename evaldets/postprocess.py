@@ -634,23 +634,22 @@ def by_quality_table_OO(model_dir, header=True, t_score=0.5, name_by_dir=False):
     """Replacement for baseline_table() when used on a model directory (by quality)."""
     data = subdir_summaries_with_ap(model_dir, t_score, name_by_dir, raw=True)
     table = Table(
-        Column("quality", "quality"),
+        Column("quality", "Q"),
         RawPercent("AP", r"AP"),
         RawPercent("AP50", r"AP\tsub{50}"),
         RawPercent("AP75", r"AP\tsub{75}"),
         RawPercent("APl", r"AP\tsub{l}"),
         RawPercent("APm", r"AP\tsub{m}"),
         RawPercent("APs", r"AP\tsub{s}"),
-        Percent("PPV", r"PPV\,\%"),
-        Percent("TPR", r"TPR\,\%"),
-        Percent("F1", r"F1\,\%"),
+        Percent("PPV", r"PPV"),
+        Percent("TPR", r"TPR"),
         Column("TP", "TP"),
         Column("FP", "FP", bad=True),
         Column("EX", "EX"),
         header=header,
         long=True,
         mark_best=False,
-        groups=[1, 3, 3, 3],
+        groups=[1, 3, 3, 2],
     )
     table.render(data)
 
