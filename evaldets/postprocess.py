@@ -5,6 +5,7 @@ import logging
 import operator
 import os
 import sys
+from typing import Optional, TextIO
 import warnings
 from datetime import datetime
 from functools import wraps
@@ -568,7 +569,7 @@ class Table:
         for g in self.groups:
             for _ in range(g):
                 split.append(next(ia))
-            split.append('|')
+            split.append("|")
         split.extend(ia)
         return "".join(split)
 
@@ -588,16 +589,19 @@ class Table:
             return
         print("\\bottomrule\n\\end{" + self.tabular + "}", file=self.hdrfile)
 
-    def render(self, data):
+    def render(self, data, outfile: Optional[TextIO] = None):
         if self.mark_best:
             for col in self.columns:
                 col.learn(data)
-
+        outfile = outfile or sys.stdout
+        hdrbackup = self.hdrfile
+        self.hdrfile = outfile
         self._header()
         for row in data:
             line = " & ".join(col.render(row) for col in self.columns)
-            print(line + r" \\")
+            print(line + r" \\", file=outfile)
         self._footer()
+        self.hdrfile = hdrbackup
 
 
 def baseline_table_prf_OO(reval_dir, header=True):
@@ -630,7 +634,9 @@ def baseline_table_ap_OO(reval_dir, header=True):
     table.render(metrics)
 
 
-def by_quality_table_OO(model_dir, header=True, t_score=0.5, name_by_dir=False):
+def by_quality_table_OO(
+    model_dir, header=True, t_score=0.5, name_by_dir=False, filename: str = None
+):
     """Replacement for baseline_table() when used on a model directory (by quality)."""
     data = subdir_summaries_with_ap(model_dir, t_score, name_by_dir, raw=True)
     table = Table(
@@ -651,7 +657,11 @@ def by_quality_table_OO(model_dir, header=True, t_score=0.5, name_by_dir=False):
         mark_best=False,
         groups=[1, 3, 3, 2],
     )
-    table.render(data)
+    if filename:
+        with open(filename, "w") as outfile:
+            table.render(data, outfile)
+    else:
+        table.render(data)
 
 
 # endregion
