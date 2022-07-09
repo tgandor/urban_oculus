@@ -635,10 +635,16 @@ def baseline_table_ap_OO(reval_dir, header=True):
 
 
 def by_quality_table_OO(
-    model_dir, header=True, t_score=0.5, name_by_dir=False, filename: str = None
+    model_dir,
+    header=True,
+    t_score=0.5,
+    filename: str = None,
+    skip: int = None,
 ):
     """Replacement for baseline_table() when used on a model directory (by quality)."""
-    data = subdir_summaries_with_ap(model_dir, t_score, name_by_dir, raw=True)
+    data = subdir_summaries_with_ap(model_dir, t_score, name_by_dir=False, raw=True)
+    if skip:
+        data = data[::skip]
     table = Table(
         Column("quality", "Q"),
         RawPercent("AP", r"AP"),
