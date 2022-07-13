@@ -311,9 +311,27 @@ class GrandSummary:
         self.model_is_basename = model_is_basename
         self.phys_dir = os.path.expanduser(reval_dir)
         self.subdirs = _get_model_subdirectories(self.phys_dir)
+        self._model_APs = None
+        self._model_PRF1s = None
+        self._model_PRF1_t_score = None
 
     def __repr__(self):
         return f"GrandSummary('{self.reval_dir}')"
+
+    def get_model_APs(self, model=None):
+        if self._model_APs is None:
+            self._model_APs = {df["model"][0]: df for df in self.ap_summaries()}
+        if model is None:
+            return self._model_APs
+        return self._model_APs[model]
+
+    def get_model_PRF1s(self, t_score=0, model=None):
+        if self._model_PRF1s is None or self._model_PRF1_t_score != t_score:
+            self._model_PRF1s = {df["model"][0]: df for df in self.q_summaries(t_score)}
+            self._model_PRF1_t_score = t_score
+        if model is None:
+            return self._model_PRF1s
+        return self._model_PRF1s[model]
 
     def q_summaries(self, t_score=0):
         """For each model subdirectory get a df with per-Q summary() results."""
@@ -346,7 +364,7 @@ class GrandSummary:
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
-        models = {df["model"][0]: df for df in self.q_summaries(t_score)}
+        models = self.get_model_PRF1s(t_score=t_score)
         for model in order if order else models.keys():
             df = models[model]
             if axes is not None:
@@ -378,7 +396,7 @@ class GrandSummary:
         subplot_ord = ord("A")
         ylim = (0, 1)
         value_caption = "value"
-        models = {df["model"][0]: df for df in self.ap_summaries()}
+        models = self.get_model_APs()
         columns = ["APl", "APm", "APs"] if by_size else ["AP", "AP75", "AP50"]
 
         if relative:
