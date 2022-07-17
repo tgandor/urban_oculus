@@ -447,6 +447,12 @@ class GrandSummary:
             )
             subplot_ord += 1
 
+    def plot_AP(self, model, metric="AP", i18n=None):
+        self.get_model_APs(model).set_index("quality")[metric].rename(model).plot()
+        plt.xlabel(T_(i18n, "quality"))
+        plt.ylabel(T_(i18n, metric))
+        plt.legend()
+
 
 # region: matplotlib
 def get_figure_axes(rows=2, cols=5, h=6, w=15, **kwargs):
@@ -474,8 +480,10 @@ def finish_plot(fig, axes, legend_row=1, legend_col=4, clear_col=None, suptitle=
     fig.tight_layout()
 
 
-def save_plot(fig, name, v=0, c=0, p=1):
+def save_plot(fig, name, v=0, c=0, p=0):
     # https://stackoverflow.com/questions/10784652/png-options-to-produce-smaller-file-size-when-using-savefig
+    if fig is None:
+        fig = plt.gcf()
     fig.savefig(f"{name}.png")
     os.system(f"mogrify {'-verbose' if v else ''} +dither -colors 256 {name}.png")
     os.system(f"optipng {'' if v else '-quiet'} -o5 {name}.png")
