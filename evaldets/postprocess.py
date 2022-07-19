@@ -305,6 +305,7 @@ class Summary:
 
 class GrandSummary:
     """For top level reval directory."""
+    set_q_idx = False
 
     def __init__(self, reval_dir: str, model_is_basename=False) -> None:
         self.reval_dir = reval_dir
@@ -320,14 +321,14 @@ class GrandSummary:
 
     def get_model_APs(self, model=None):
         if self._model_APs is None:
-            self._model_APs = {df["model"][0]: df for df in self.ap_summaries()}
+            self._model_APs = {df["model"].iat[0]: df for df in self.ap_summaries()}
         if model is None:
             return self._model_APs
         return self._model_APs[model]
 
     def get_model_PRF1s(self, t_score=0, model=None):
         if self._model_PRF1s is None or self._model_PRF1_t_score != t_score:
-            self._model_PRF1s = {df["model"][0]: df for df in self.q_summaries(t_score)}
+            self._model_PRF1s = {df["model"].iat[0]: df for df in self.q_summaries(t_score)}
             self._model_PRF1_t_score = t_score
         if model is None:
             return self._model_PRF1s
@@ -339,6 +340,8 @@ class GrandSummary:
             df = subdir_summaries(s, t_score)
             if self.model_is_basename:
                 df["model"] = dirbasename(s)
+            if self.set_q_idx:
+                df = df.set_index("quality")
             yield df
 
     def ap_summaries(self):
@@ -347,11 +350,13 @@ class GrandSummary:
             for col in df.columns:
                 if col.startswith("AP"):
                     df[col] = df[col] / 100
+            if self.set_q_idx:
+                df = df.set_index("quality")
             yield df
 
     def save_q_summaries(self, excel=True):
         for df in self.q_summaries():
-            model = df["model"][0]
+            model = df["model"].iat[0]
             if excel:
                 out = os.path.join(self.phys_dir, f"{model}.xlsx")
                 df.to_excel(out)
@@ -432,7 +437,7 @@ class GrandSummary:
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
-        models = {df["model"][0]: df for df in self.ap_summaries()}
+        models = {df["model"].iat[0]: df for df in self.ap_summaries()}
         for model in order if order else models.keys():
             df = models[model]
             if axes is not None:
