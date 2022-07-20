@@ -433,7 +433,7 @@ class GrandSummary:
                     line.set_linewidth(w)
                     w -= 1
 
-    def plot_ap_derivatives(self, axes=None, order=None, i18n=None, **kwargs):
+    def plot_ap_derivatives(self, axes=None, order=None, i18n=None, smooth=5, **kwargs):
         if axes is not None:
             axes = iter(axes.ravel())
         subplot_ord = ord("A")
@@ -443,9 +443,12 @@ class GrandSummary:
             if axes is not None:
                 ax = next(axes)
                 kwargs["ax"] = ax
-            df.AP.rename("d(AP)/dQ").diff().rolling(5).mean().plot(
+            der = df.AP.rename("d(AP)/dQ").diff() * 100
+            if smooth:
+                der = der.rolling(smooth).mean()
+            der.plot(
                 xlabel=T_(i18n, "quality"),
-                ylabel=T_(i18n, "d(AP)/dQ"),
+                ylabel=T_(i18n, "d(AP)/dQ (p.p.)"),
                 legend=False,
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
