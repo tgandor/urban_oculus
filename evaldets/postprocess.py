@@ -455,8 +455,11 @@ class GrandSummary:
             )
             subplot_ord += 1
 
-    def plot_AP(self, model, metric="AP", i18n=None):
-        self.get_model_APs(model).set_index("quality")[metric].rename(model).plot()
+    def plot_AP(self, model, metric="AP", ax=None, i18n=None):
+        df = self.get_model_APs(model)
+        if not self.set_q_idx:
+            df = df.set_index("quality")
+        df[metric].rename(model).plot(ax=ax)
         plt.xlabel(T_(i18n, "quality"))
         plt.ylabel(T_(i18n, metric))
         plt.legend()
