@@ -207,6 +207,9 @@ class Summary:
     def __init__(self, reval_dir: str) -> None:
         self.reval_dir = reval_dir
         self.phys_dir = os.path.expanduser(reval_dir)
+        self._post_init()
+
+    def _post_init(self):
         self.subdirs = sorted(glob.glob(os.path.join(self.phys_dir, "*/")))
         self.metadata = {subdir: load_meta(subdir) for subdir in self.subdirs}
 
@@ -240,6 +243,8 @@ class Summary:
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
+            if axes is None:
+                ax = plt.gca()
             ax.set_xlabel(T_(i18n, "T_c"))
             subplot_ord += 1
 
@@ -307,12 +312,17 @@ class QualitySummary(Summary):
     """Like Summary, but not for baseline directory: pick subdirs with specific quality."""
 
     def __init__(self, reval_dir: str, quality: int) -> None:
+        self.quality = quality
         super().__init__(reval_dir)
+
+    def _post_init(self):
         self.subdirs = sorted(
-            glob.glob(os.path.join(self.phys_dir, f"*/*_{quality:03d}/"))
+            glob.glob(os.path.join(self.phys_dir, f"*/*_{self.quality:03d}/"))
         )
         if not self.subdirs:
-            raise ValueError(f"No dump directories for {reval_dir=} and {quality=}")
+            raise ValueError(
+                f"No dump directories for {self.reval_dir=} and {self.quality=}"
+            )
         self.metadata = {subdir: load_meta(subdir) for subdir in self.subdirs}
 
 
