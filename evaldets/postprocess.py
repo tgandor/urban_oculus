@@ -303,8 +303,22 @@ class Summary:
             subplot_ord += 1
 
 
+class QualitySummary(Summary):
+    """Like Summary, but not for baseline directory: pick subdirs with specific quality."""
+
+    def __init__(self, reval_dir: str, quality: int) -> None:
+        super().__init__(reval_dir)
+        self.subdirs = sorted(
+            glob.glob(os.path.join(self.phys_dir, f"*/*_{quality:03d}/"))
+        )
+        if not self.subdirs:
+            raise ValueError(f"No dump directories for {reval_dir=} and {quality=}")
+        self.metadata = {subdir: load_meta(subdir) for subdir in self.subdirs}
+
+
 class GrandSummary:
     """For top level reval directory."""
+
     set_q_idx = False
 
     def __init__(self, reval_dir: str, model_is_basename=False) -> None:
@@ -328,7 +342,9 @@ class GrandSummary:
 
     def get_model_PRF1s(self, t_score=0, model=None):
         if self._model_PRF1s is None or self._model_PRF1_t_score != t_score:
-            self._model_PRF1s = {df["model"].iat[0]: df for df in self.q_summaries(t_score)}
+            self._model_PRF1s = {
+                df["model"].iat[0]: df for df in self.q_summaries(t_score)
+            }
             self._model_PRF1_t_score = t_score
         if model is None:
             return self._model_PRF1s
@@ -455,13 +471,21 @@ class GrandSummary:
             )
             subplot_ord += 1
 
-    def plot_AP(self, model, metric="AP", ax=None, i18n=None):
+    def plot_AP(self, model, metric="AP", ax=None, i18n=None, metric_in_name=False):
         df = self.get_model_APs(model)
         if not self.set_q_idx:
             df = df.set_index("quality")
-        df[metric].rename(model).plot(ax=ax)
+        if metric_in_name:
+            name = f"{model}.{metric}"
+            ylabel = "value"
+        else:
+            name = model
+            ylabel = metric
+        df[metric].rename(name).plot(ax=ax)
+        if ax:
+            plt.sca(ax)
         plt.xlabel(T_(i18n, "quality"))
-        plt.ylabel(T_(i18n, metric))
+        plt.ylabel(T_(i18n, ylabel))
         plt.legend()
 
 
@@ -680,7 +704,9 @@ def by_quality_table_OO(
     long=True,
 ):
     """Replacement for baseline_table() when used on a model directory (by quality)."""
-    data = subdir_summaries_with_ap(model_dir, t_score, model_is_basename=False, raw=True)
+    data = subdir_summaries_with_ap(
+        model_dir, t_score, model_is_basename=False, raw=True
+    )
     if skip:
         data = data[::skip]
     table = Table(
