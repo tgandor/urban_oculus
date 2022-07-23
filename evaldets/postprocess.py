@@ -677,9 +677,10 @@ def by_quality_table_OO(
     t_score=0.5,
     filename: str = None,
     skip: int = None,
+    long=True,
 ):
     """Replacement for baseline_table() when used on a model directory (by quality)."""
-    data = subdir_summaries_with_ap(model_dir, t_score, name_by_dir=False, raw=True)
+    data = subdir_summaries_with_ap(model_dir, t_score, model_is_basename=False, raw=True)
     if skip:
         data = data[::skip]
     table = Table(
@@ -696,7 +697,7 @@ def by_quality_table_OO(
         Column("FP", "FP", bad=True),
         Column("EX", "EX"),
         header=header,
-        long=True,
+        long=long,
         mark_best=False,
         groups=[1, 3, 3, 2],
     )
