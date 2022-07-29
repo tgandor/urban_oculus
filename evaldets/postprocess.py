@@ -127,16 +127,25 @@ def tp_fp_ex_by_tc(result_dir):
     )
 
 
-def load_meta(subdir, rich=True):
+def load_meta(subdir, rich=True, model_is_basename=False):
+    ret = None
+
     if rich:
         results = os.path.join(subdir, "rich_results.json")
         if os.path.exists(results):
-            return load(results)
-        logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
-    results = load(os.path.join(subdir, "results.json"))
-    results.update(results["results"]["bbox"])
-    del results["results"]
-    return results
+            ret = load(results)
+        else:
+            logger.debug(f"No rich_results.json for {subdir}. Trying results.json")
+
+    if ret is None:
+        ret = load(os.path.join(subdir, "results.json"))
+        ret.update(results["results"]["bbox"])
+        del ret["results"]
+
+    if model_is_basename:
+        ret["model"] = dirbasename(subdir, 2)
+
+    return ret
 
 
 @cached_with_args
@@ -204,9 +213,10 @@ def _get_model_subdirectories(top_dir):
 class Summary:
     """For baseline subdirectory."""
 
-    def __init__(self, reval_dir: str) -> None:
+    def __init__(self, reval_dir: str, model_is_basename=False) -> None:
         self.reval_dir = reval_dir
         self.phys_dir = os.path.expanduser(reval_dir)
+        self.model_is_basename = model_is_basename
         self._post_init()
 
     def _post_init(self):
@@ -240,6 +250,7 @@ class Summary:
                 xlim=xlim,
                 ylim=(0, 1),
                 ylabel=T_(i18n, "value"),
+                xlabel="$T_c$",
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
             )
@@ -311,9 +322,11 @@ class Summary:
 class QualitySummary(Summary):
     """Like Summary, but not for baseline directory: pick subdirs with specific quality."""
 
-    def __init__(self, reval_dir: str, quality: int) -> None:
+    def __init__(
+        self, reval_dir: str, quality: int, *, model_is_basename=False
+    ) -> None:
         self.quality = quality
-        super().__init__(reval_dir)
+        super().__init__(reval_dir, model_is_basename=model_is_basename)
 
     def _post_init(self):
         self.subdirs = sorted(
@@ -323,7 +336,13 @@ class QualitySummary(Summary):
             raise ValueError(
                 f"No dump directories for {self.reval_dir=} and {self.quality=}"
             )
-        self.metadata = {subdir: load_meta(subdir) for subdir in self.subdirs}
+        self.metadata = {
+            subdir: load_meta(subdir, model_is_basename=self.model_is_basename)
+            for subdir in self.subdirs
+        }
+
+    def get_summaries(self, t_score=0):
+        return [{**self.metadata[s], **get_summary(s, t_score)} for s in self.subdirs]
 
 
 class GrandSummary:
@@ -675,19 +694,40 @@ class Table:
         self.hdrfile = hdrbackup
 
 
+PRF_COLUMNS = [
+    RowHeader("model", "Model"),
+    Percent("precision", r"PPV\,\%"),
+    Percent("recall", r"TPR\,\%"),
+    Percent("f1", r"F1\,\%"),
+    Column("tp", "TP"),
+    Column("fp", "FP", bad=True),
+    Column("ex", "EX"),
+]
+
+
 def baseline_table_prf_OO(reval_dir, header=True):
     metrics = load_rich_results(reval_dir)
-    table = Table(
-        RowHeader("model", "Model"),
-        Percent("precision", r"PPV\,\%"),
-        Percent("recall", r"TPR\,\%"),
-        Percent("f1", r"F1\,\%"),
-        Column("tp", "TP"),
-        Column("fp", "FP", bad=True),
-        Column("ex", "EX"),
-        header=header,
-    )
+    table = Table(*PRF_COLUMNS, header=header)
     table.render(metrics)
+
+
+PRF_COLUMNS_QS = [
+    RowHeader("model", "Model"),
+    Percent("PPV", r"PPV\,\%"),
+    Percent("TPR", r"TPR\,\%"),
+    Percent("F1", r"F1\,\%"),
+    Column("tp", "TP"),
+    Column("fp", "FP", bad=True),
+    Column("ex", "EX"),
+]
+
+
+def prf_table_for_quality_OO(
+    reval_dir, quality, t_score=0.5, header=True, model_is_basename=False
+):
+    summary = QualitySummary(reval_dir, quality, model_is_basename=model_is_basename)
+    table = Table(*PRF_COLUMNS_QS, header=header)
+    table.render(summary.get_summaries(t_score))
 
 
 def baseline_table_ap_OO(reval_dir, header=True):

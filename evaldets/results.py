@@ -57,9 +57,10 @@ def load_detections(file_or_dir, cache=True, debug=True):
 
     if os.path.isdir(file_or_dir):
         dump_dir = file_or_dir
-        det_filename = glob.glob(
-            os.path.join(dump_dir, "coco_instances_results.json*")
-        )[0]
+        candidates = glob.glob(os.path.join(dump_dir, "coco_instances_results.json*"))
+        if not candidates:
+            raise ValueError(f"No coco_instances_results.json* file found in {dump_dir}")
+        det_filename = candidates[0]
     elif os.path.exists(file_or_dir):
         dump_dir = os.path.dirname(file_or_dir)
         det_filename = file_or_dir
@@ -163,7 +164,7 @@ class DetectionResults:
 
     def _ensure_meta(self):
         if self._metadata is None:
-            meta_path = os.path.join(os.path.dirname(self.det_file), 'results.json')
+            meta_path = os.path.join(os.path.dirname(self.det_file), "results.json")
             self._metadata = load(meta_path)
 
     def _evaluate(self):
@@ -337,12 +338,12 @@ class DetectionResults:
     @property
     def quality(self):
         self._ensure_meta()
-        return self._metadata['quality']
+        return self._metadata["quality"]
 
     @property
     def model(self):
         self._ensure_meta()
-        return self._metadata['model']
+        return self._metadata["model"]
 
     @property
     def detections_by_score(self):
