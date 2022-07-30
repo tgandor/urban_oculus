@@ -716,9 +716,9 @@ PRF_COLUMNS_QS = [
     Percent("PPV", r"PPV\,\%"),
     Percent("TPR", r"TPR\,\%"),
     Percent("F1", r"F1\,\%"),
-    Column("tp", "TP"),
-    Column("fp", "FP", bad=True),
-    Column("ex", "EX"),
+    Column("TP", "TP"),
+    Column("FP", "FP", bad=True),
+    Column("EX", "EX"),
 ]
 
 
