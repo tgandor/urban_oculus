@@ -13,7 +13,7 @@ from functools import wraps
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from uo.utils import dirbasename, load, save
+from uo.utils import dirbasename, load, randname, save, startfile
 
 from .names import T_
 from .results import CROWD_ID_T, DetectionResults
@@ -693,6 +693,25 @@ class Table:
         self._footer()
         self.hdrfile = hdrbackup
 
+    def preview(self, data, name=None):
+        if name is None:
+            name = randname("tab_")
+        with open(f"{name}.tex", "w") as tex:
+            tex.write(
+                r"""\documentclass{standalone}
+\usepackage{booktabs}
+\newcommand\tsub[1]{\textsubscript{#1}}
+
+\begin{document}
+"""
+            )
+            self.render(data, tex)
+            tex.write("\n\\end{document}\n")
+        ret = os.system(f'pdflatex "{name}.tex"')
+        if ret != 0:
+            raise ValueError(f"Error compliling table preview {name}.tex")
+        startfile(f"{name}.pdf")
+
 
 PRF_COLUMNS = [
     RowHeader("model", "Model"),
@@ -711,6 +730,13 @@ def baseline_table_prf_OO(reval_dir, header=True):
     table.render(metrics)
 
 
+def _preview_or_render(table, data, preview):
+    if preview:
+        table.preview(data)
+    else:
+        table.render(data)
+
+
 PRF_COLUMNS_QS = [
     RowHeader("model", "Model"),
     Percent("PPV", r"PPV\,\%"),
@@ -723,26 +749,52 @@ PRF_COLUMNS_QS = [
 
 
 def prf_table_for_quality_OO(
-    reval_dir, quality, t_score=0.5, header=True, model_is_basename=False
+    reval_dir,
+    quality,
+    t_score=0.5,
+    header=True,
+    model_is_basename=False,
+    preview=False,
+    condition=None,
 ):
     summary = QualitySummary(reval_dir, quality, model_is_basename=model_is_basename)
     table = Table(*PRF_COLUMNS_QS, header=header)
-    table.render(summary.get_summaries(t_score))
+    data = summary.get_summaries(t_score)
+    if condition:
+        data = [d for d in data if condition(d)]
+    _preview_or_render(table, data, preview)
+
+
+AP_COLUMNS = [
+    RawPercent("AP", r"AP"),
+    RawPercent("AP50", r"AP\tsub{50}"),
+    RawPercent("AP75", r"AP\tsub{75}"),
+    RawPercent("APl", r"AP\tsub{l}"),
+    RawPercent("APm", r"AP\tsub{m}"),
+    RawPercent("APs", r"AP\tsub{s}"),
+]
 
 
 def baseline_table_ap_OO(reval_dir, header=True):
     metrics = load_rich_results(reval_dir)
-    table = Table(
-        Column("quality", "Q"),
-        RawPercent("AP", r"AP"),
-        RawPercent("AP50", r"AP\tsub{50}"),
-        RawPercent("AP75", r"AP\tsub{75}"),
-        RawPercent("APl", r"AP\tsub{l}"),
-        RawPercent("APm", r"AP\tsub{m}"),
-        RawPercent("APs", r"AP\tsub{s}"),
-        header=header,
-    )
+    table = Table(Column("quality", "Q"), *AP_COLUMNS, header=header)
     table.render(metrics)
+
+
+def ap_table_for_quality_OO(
+    reval_dir,
+    quality,
+    header=True,
+    model_is_basename=False,
+    preview=False,
+    condition=None,
+):
+    summary = QualitySummary(reval_dir, quality, model_is_basename=model_is_basename)
+    table = Table(RowHeader("model", "Model"), *AP_COLUMNS, header=header)
+    data = summary.get_summaries()
+    if condition:
+        data = [d for d in data if condition(d)]
+    _preview_or_render(table, data, preview)
 
 
 def by_quality_table_OO(

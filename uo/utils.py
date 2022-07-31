@@ -6,7 +6,11 @@ import json
 import logging
 import os
 import pickle
+from random import choice
 import shutil
+from string import ascii_lowercase
+import subprocess
+import sys
 import time
 import zlib
 from functools import wraps
@@ -20,6 +24,21 @@ def dirbasename(path: str, up: int = 0) -> str:
     if path.endswith("/"):
         return os.path.basename(os.path.dirname(path))
     return os.path.basename(path)
+
+
+def randname(prefix="", entropy=6):
+    while True:
+        name = prefix + "".join(choice(ascii_lowercase) for _ in range(entropy))
+        if not glob.glob(name + "*"):
+            return name
+
+
+def startfile(filename):
+    if sys.platform == "win32":
+        os.startfile(filename)
+    else:
+        opener = "open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.call([opener, filename])
 
 
 def cached(path):
