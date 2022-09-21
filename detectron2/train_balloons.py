@@ -30,7 +30,7 @@ import json
 from detectron2.structures import BoxMode
 
 
-def get_balloon_dicts(img_dir: str) -> list[dict]:
+def get_balloon_dicts(img_dir: str):
     json_file = os.path.join(img_dir, "via_region_data.json")
     with open(json_file) as f:
         imgs_anns = json.load(f)
