@@ -274,6 +274,7 @@ class Summary:
         min_Tc=0.1,
         i18n=None,
         xlim=None,
+        scale=1.0,
         **kwargs,
     ):
         """Plot counts of TP, FP and EX againts Tc."""
@@ -291,6 +292,10 @@ class Summary:
 
         for model in order if order else models.keys():
             df = models[model]
+
+            for col in ["TP", "FP", "EX"]:
+                df[col] = df[col] * scale
+
             if axes is not None:
                 ax = next(axes)
                 kwargs["ax"] = ax
@@ -307,6 +312,7 @@ class Summary:
                 x="T_c",
                 y=yy,
                 xlim=xlim,
+                xlabel=T_(i18n, "T_c"),
                 ylabel=T_(i18n, "count"),
                 title=f"{chr(subplot_ord)}: {model}",
                 **kwargs,
@@ -369,7 +375,7 @@ class GrandSummary:
             return self._model_APs
         return self._model_APs[model]
 
-    def get_model_PRF1s(self, t_score=0, model=None):
+    def get_model_PRF1s(self, t_score: float = 0, model=None):
         if self._model_PRF1s is None or self._model_PRF1_t_score != t_score:
             self._model_PRF1s = {
                 df["model"].iat[0]: df for df in self.q_summaries(t_score)
@@ -500,8 +506,7 @@ class GrandSummary:
             )
             subplot_ord += 1
 
-    def plot_AP(self, model, metric="AP", ax=None, i18n=None, metric_in_name=False):
-        df = self.get_model_APs(model)
+    def _plot(self, df, model, metric, ax=None, i18n=None, metric_in_name=False):
         if not self.set_q_idx:
             df = df.set_index("quality")
         if metric_in_name:
@@ -517,6 +522,35 @@ class GrandSummary:
         plt.ylabel(T_(i18n, ylabel))
         plt.legend()
 
+    def plot_AP(self, model, metric="AP", ax=None, i18n=None, metric_in_name=False):
+        df = self.get_model_APs(model)
+        self._plot(df, model, metric, ax, i18n, metric_in_name)
+
+    def plot_PRF1(
+        self, model, metric="F1", t_score=0.5, ax=None, i18n=None, metric_in_name=False
+    ):
+        df = self.get_model_PRF1s(t_score, model)
+        self._plot(df, model, metric, ax, i18n, metric_in_name)
+
+    @staticmethod
+    def _better(df1, df2, metric, out):
+        mask = df1[metric] > df2[metric]
+        df1["advantage"] = df1[metric] - df2[metric]
+        sel = df1[mask].set_index("quality")
+        if out:
+            sel = sel[out]
+        else:
+            sel = sel[[metric, "advantage"]]
+        return sel
+
+    def better_AP(self, model1, model2, metric="AP", out=None):
+        return self._better(*map(self.get_model_APs, (model1, model2)), metric, out)
+
+    def better_PRF1(self, model1, model2, metric="F1", t_score=0.5, out=None):
+        df1 = self.get_model_PRF1s(t_score, model1)
+        df2 = self.get_model_PRF1s(t_score, model2)
+        return self._better(df1, df2, metric, out)
+
 
 # region: matplotlib
 def get_figure_axes(rows=2, cols=5, h=6, w=15, **kwargs):
@@ -527,7 +561,15 @@ def get_figure_axes(rows=2, cols=5, h=6, w=15, **kwargs):
     return fig, axes
 
 
-def finish_plot(fig, axes, legend_row=1, legend_col=4, clear_col=None, suptitle=None):
+def finish_plot(
+    fig,
+    axes,
+    legend_row=1,
+    legend_col=4,
+    clear_col=None,
+    suptitle=None,
+    legend_font="x-large",
+):
     """Layout and place legend for a figure created with get_figure_axes()."""
     if clear_col is None:
         clear_col = legend_col
@@ -536,7 +578,7 @@ def finish_plot(fig, axes, legend_row=1, legend_col=4, clear_col=None, suptitle=
     axes[legend_row, legend_col].legend(
         *axes[0, 0].get_legend_handles_labels(),
         loc="lower right",
-        fontsize="x-large",
+        fontsize=legend_font,
         borderpad=2,
     )
     if suptitle:
